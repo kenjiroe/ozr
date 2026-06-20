@@ -1,0 +1,6 @@
+/target
+tests/fixtures/mcp-filesystem/node_modules
+ui/node_modules
+ui/dist
+ui/src-tauri/target
+.ozr

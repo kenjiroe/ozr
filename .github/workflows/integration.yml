@@ -1,0 +1,54 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_sandboxd:
+        description: Run sandboxd live fixture
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  qdrant-fixture:
+    runs-on: ubuntu-latest
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.13.2
+        ports:
+          - 6333:6333
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0
+      - name: qdrant live fixture
+        run: cargo test --test integration_live qdrant_live_fixture -- --ignored --nocapture
+        env:
+          OZR_RUN_INTEGRATION: "1"
+          OZR_FEATURE_VECTOR_BACKEND: qdrant
+          OZR_QDRANT_URL: http://127.0.0.1:6333
+          OZR_QDRANT_COLLECTION: ozr_ci_integration
+          OZR_VECTOR_EMBEDDINGS: "false"
+
+  sandboxd-fixture:
+    if: ${{ github.event.inputs.run_sandboxd == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0
+      - name: sandboxd live fixture
+        run: cargo test --test integration_live sandboxd_live_fixture -- --ignored --nocapture
+        env:
+          OZR_RUN_INTEGRATION: "1"
+          OZR_FEATURE_SANDBOXD_EXECUTOR: "true"
+          OZR_SANDBOXD_API_BASE: ${{ secrets.OZR_SANDBOXD_API_BASE }}
+          OZR_SANDBOXD_API_TOKEN: ${{ secrets.OZR_SANDBOXD_API_TOKEN }}
+          OZR_SANDBOXD_SANDBOX_ID: ${{ secrets.OZR_SANDBOXD_SANDBOX_ID }}
+          OZR_SANDBOXD_REQUIRE_AUTH: "true"
+          OZR_SANDBOXD_HTTPS_ONLY: "true"

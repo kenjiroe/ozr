@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0
+      - name: cargo check
+        run: cargo check
+      - name: cargo test (unit)
+        run: cargo test --lib
+      - name: cargo test (smoke)
+        run: cargo test --test smoke_scenarios
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: install mcp filesystem fixture
+        run: npm ci --prefix tests/fixtures/mcp-filesystem
+      - name: cargo test (mcp stdio)
+        run: cargo test --test mcp_stdio
+      - name: cargo test (mcp filesystem)
+        run: cargo test --test mcp_filesystem
+      - name: cargo test (api)
+        run: cargo test --test api

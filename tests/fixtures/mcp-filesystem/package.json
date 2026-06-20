@@ -1,0 +1,8 @@
+{
+  "name": "ozr-mcp-filesystem-fixture",
+  "private": true,
+  "description": "Pinned @modelcontextprotocol/server-filesystem for ozr MCP E2E tests",
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "2026.1.14"
+  }
+}
