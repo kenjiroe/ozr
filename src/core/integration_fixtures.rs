@@ -21,20 +21,7 @@ pub fn integration_enabled() -> bool {
 }
 
 pub fn sandboxd_settings_from_config(cfg: &AppConfig) -> SandboxdSettings {
-    SandboxdSettings {
-        api_base: cfg.sandboxd_api_base.clone(),
-        api_token: cfg.sandboxd_api_token.clone(),
-        sandbox_id: cfg.sandboxd_sandbox_id.clone(),
-        agent: cfg.sandboxd_agent.clone(),
-        poll_attempts: cfg.sandboxd_poll_attempts,
-        poll_interval_ms: cfg.sandboxd_poll_interval_ms,
-        poll_backoff_multiplier: cfg.sandboxd_poll_backoff_multiplier,
-        poll_max_interval_ms: cfg.sandboxd_poll_max_interval_ms,
-        capture_events: cfg.sandboxd_capture_events,
-        events_max_time_s: cfg.sandboxd_events_max_time_s,
-        require_auth: cfg.sandboxd_require_auth,
-        https_only: cfg.sandboxd_https_only,
-    }
+    SandboxdSettings::from_config(cfg)
 }
 
 pub fn run_sandboxd_fixture(cfg: &AppConfig) -> Result<FixtureReport, String> {

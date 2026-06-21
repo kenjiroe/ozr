@@ -12,9 +12,7 @@ use crate::core::memory::MemoryStore;
 use crate::core::memory_orchestrator::{LayeredMemoryOrchestrator, MemoryOrchestrator, RecallBudget};
 use crate::core::policy::PolicyEngine;
 use crate::core::policy_pack::{BudgetPreset, PolicyPack};
-use crate::core::sandbox_executor::{
-    HostExecutor, SandboxdApiExecutor, SandboxdExecutor, SandboxdSettings,
-};
+use crate::core::sandbox_executor::{RuntimeExecutor, SandboxdSettings};
 use crate::core::sandboxd_policy::{
     checklist_template, evaluate_production_checklist, policy_summary, render_checklist_markdown,
     CheckStatus,
@@ -182,24 +180,8 @@ async fn run_with_provider(
     audit: &mut AuditLogger,
     policy: PolicyEngine,
 ) -> CliResult<()> {
-    let final_answer = if cfg.feature_sandboxd_executor {
-        let settings = sandboxd_settings_from_config(&cfg);
-
-        if settings.is_ready() {
-            let executor = SandboxdApiExecutor::new(settings);
-            let approver = CliApprovalGate::new(cfg.approval_mode);
-            let mut loop_engine =
-                AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
-            loop_engine.run_once(&enriched_prompt).await?
-        } else {
-            let executor = SandboxdExecutor::default();
-            let approver = CliApprovalGate::new(cfg.approval_mode);
-            let mut loop_engine =
-                AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
-            loop_engine.run_once(&enriched_prompt).await?
-        }
-    } else {
-        let executor = HostExecutor::default();
+    let final_answer = {
+        let executor = RuntimeExecutor::from_config(&cfg);
         let approver = CliApprovalGate::new(cfg.approval_mode);
         let mut loop_engine =
             AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
@@ -482,20 +464,7 @@ fn ensure_sandboxd_checklist_template() -> CliResult<()> {
 }
 
 fn sandboxd_settings_from_config(cfg: &AppConfig) -> SandboxdSettings {
-    SandboxdSettings {
-        api_base: cfg.sandboxd_api_base.clone(),
-        api_token: cfg.sandboxd_api_token.clone(),
-        sandbox_id: cfg.sandboxd_sandbox_id.clone(),
-        agent: cfg.sandboxd_agent.clone(),
-        poll_attempts: cfg.sandboxd_poll_attempts,
-        poll_interval_ms: cfg.sandboxd_poll_interval_ms,
-        poll_backoff_multiplier: cfg.sandboxd_poll_backoff_multiplier,
-        poll_max_interval_ms: cfg.sandboxd_poll_max_interval_ms,
-        capture_events: cfg.sandboxd_capture_events,
-        events_max_time_s: cfg.sandboxd_events_max_time_s,
-        require_auth: cfg.sandboxd_require_auth,
-        https_only: cfg.sandboxd_https_only,
-    }
+    SandboxdSettings::from_config(cfg)
 }
 
 fn ensure_sample_config() -> CliResult<()> {

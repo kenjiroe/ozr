@@ -1,3 +1,4 @@
+use crate::core::config::AppConfig;
 use crate::core::http_client::{self, shell_quote};
 use crate::core::json_util::{
     build_sandboxd_task_payload, parse_sandboxd_sse_capture, parse_sandboxd_task_status,
@@ -55,8 +56,62 @@ pub struct SandboxdSettings {
 }
 
 impl SandboxdSettings {
+    pub fn from_config(cfg: &AppConfig) -> Self {
+        Self {
+            api_base: cfg.sandboxd_api_base.clone(),
+            api_token: cfg.sandboxd_api_token.clone(),
+            sandbox_id: cfg.sandboxd_sandbox_id.clone(),
+            agent: cfg.sandboxd_agent.clone(),
+            poll_attempts: cfg.sandboxd_poll_attempts,
+            poll_interval_ms: cfg.sandboxd_poll_interval_ms,
+            poll_backoff_multiplier: cfg.sandboxd_poll_backoff_multiplier,
+            poll_max_interval_ms: cfg.sandboxd_poll_max_interval_ms,
+            capture_events: cfg.sandboxd_capture_events,
+            events_max_time_s: cfg.sandboxd_events_max_time_s,
+            require_auth: cfg.sandboxd_require_auth,
+            https_only: cfg.sandboxd_https_only,
+        }
+    }
+
     pub fn is_ready(&self) -> bool {
         !self.api_base.is_empty() && !self.sandbox_id.is_empty()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum RuntimeExecutor {
+    Host(HostExecutor),
+    SandboxdStub(SandboxdExecutor),
+    SandboxdApi(SandboxdApiExecutor),
+}
+
+impl RuntimeExecutor {
+    pub fn from_config(cfg: &AppConfig) -> Self {
+        if !cfg.feature_sandboxd_executor {
+            return Self::Host(HostExecutor);
+        }
+        let settings = SandboxdSettings::from_config(cfg);
+        if settings.is_ready() {
+            Self::SandboxdApi(SandboxdApiExecutor::new(settings))
+        } else {
+            Self::SandboxdStub(SandboxdExecutor)
+        }
+    }
+}
+
+#[async_trait]
+impl SandboxExecutor for RuntimeExecutor {
+    async fn execute(
+        &self,
+        action: &PlannedAction,
+        params: &str,
+        mcp: &dyn McpClient,
+    ) -> Result<String, String> {
+        match self {
+            Self::Host(executor) => executor.execute(action, params, mcp).await,
+            Self::SandboxdStub(executor) => executor.execute(action, params, mcp).await,
+            Self::SandboxdApi(executor) => executor.execute(action, params, mcp).await,
+        }
     }
 }
 
@@ -303,11 +358,42 @@ fn auth_header_arg(settings: &SandboxdSettings) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::config::AppConfig;
 
     #[test]
     fn terminal_status_values_are_recognized() {
         assert!(is_terminal_status("succeeded"));
         assert!(is_terminal_status("failed"));
         assert!(!is_terminal_status("running"));
+    }
+
+    #[test]
+    fn runtime_executor_selects_host_by_default() {
+        let cfg = AppConfig::default();
+        assert!(matches!(
+            RuntimeExecutor::from_config(&cfg),
+            RuntimeExecutor::Host(_)
+        ));
+    }
+
+    #[test]
+    fn runtime_executor_selects_sandboxd_stub_without_sandbox_id() {
+        let mut cfg = AppConfig::default();
+        cfg.feature_sandboxd_executor = true;
+        assert!(matches!(
+            RuntimeExecutor::from_config(&cfg),
+            RuntimeExecutor::SandboxdStub(_)
+        ));
+    }
+
+    #[test]
+    fn runtime_executor_selects_sandboxd_api_when_ready() {
+        let mut cfg = AppConfig::default();
+        cfg.feature_sandboxd_executor = true;
+        cfg.sandboxd_sandbox_id = "sb-test".to_string();
+        assert!(matches!(
+            RuntimeExecutor::from_config(&cfg),
+            RuntimeExecutor::SandboxdApi(_)
+        ));
     }
 }

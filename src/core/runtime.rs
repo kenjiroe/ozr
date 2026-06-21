@@ -7,9 +7,7 @@ use crate::core::mcp_client::{build_mcp_client, McpClient};
 use crate::core::memory::MemoryStore;
 use crate::core::policy::PolicyEngine;
 use crate::core::policy_pack::{BudgetPreset, PolicyPack};
-use crate::core::sandbox_executor::{
-    HostExecutor, SandboxdApiExecutor, SandboxdExecutor, SandboxdSettings,
-};
+use crate::core::sandbox_executor::RuntimeExecutor;
 use crate::core::agent_loop::AgentLoop;
 use std::time::Duration;
 
@@ -55,48 +53,11 @@ async fn run_agent_with_deps(
     memory: MemoryStore,
     audit: &mut AuditLogger,
 ) -> Result<String, String> {
-    if cfg.feature_sandboxd_executor {
-        let settings = sandboxd_settings_from_config(cfg);
-        if settings.is_ready() {
-            let executor = SandboxdApiExecutor::new(settings);
-            let mut loop_engine =
-                AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
-            return loop_engine
-                .run_once(prompt)
-                .await
-                .map_err(|err| err.to_string());
-        }
-        let executor = SandboxdExecutor::default();
-        let mut loop_engine =
-            AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
-        return loop_engine
-            .run_once(prompt)
-            .await
-            .map_err(|err| err.to_string());
-    }
-
-    let executor = HostExecutor::default();
+    let executor = RuntimeExecutor::from_config(cfg);
     let mut loop_engine =
         AgentLoop::new(policy, budget, llm, mcp, executor, approver, memory, audit);
     loop_engine
         .run_once(prompt)
         .await
         .map_err(|err| err.to_string())
-}
-
-fn sandboxd_settings_from_config(cfg: &AppConfig) -> SandboxdSettings {
-    SandboxdSettings {
-        api_base: cfg.sandboxd_api_base.clone(),
-        api_token: cfg.sandboxd_api_token.clone(),
-        sandbox_id: cfg.sandboxd_sandbox_id.clone(),
-        agent: cfg.sandboxd_agent.clone(),
-        poll_attempts: cfg.sandboxd_poll_attempts,
-        poll_interval_ms: cfg.sandboxd_poll_interval_ms,
-        poll_backoff_multiplier: cfg.sandboxd_poll_backoff_multiplier,
-        poll_max_interval_ms: cfg.sandboxd_poll_max_interval_ms,
-        capture_events: cfg.sandboxd_capture_events,
-        events_max_time_s: cfg.sandboxd_events_max_time_s,
-        require_auth: cfg.sandboxd_require_auth,
-        https_only: cfg.sandboxd_https_only,
-    }
 }

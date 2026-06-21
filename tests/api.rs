@@ -166,6 +166,40 @@ async fn test_e2e_approval_flow_shell() {
 }
 
 #[tokio::test]
+async fn test_e2e_sandboxd_stub_routes_shell_after_approval() {
+    let mut cfg = AppConfig::default();
+    cfg.feature_sandboxd_executor = true;
+    let app = app_for_tests(cfg);
+
+    let (status, payload) = json_request(
+        app.clone(),
+        "POST",
+        "/v1/run",
+        Some(r#"{"prompt":"run mystery shell task"}"#.to_string()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let session_id = payload["session_id"].as_str().expect("session_id");
+
+    let pending = poll_session_until(app.clone(), session_id, "pending_approval", 50).await;
+    assert_eq!(pending["pending"]["action_kind"], "Shell");
+
+    let (approve_status, _) = json_request(
+        app.clone(),
+        "POST",
+        &format!("/v1/session/{}/approve", session_id),
+        Some(r#"{"decision":"approve","reason":"sandboxd stub ok"}"#.to_string()),
+    )
+    .await;
+    assert_eq!(approve_status, StatusCode::OK);
+
+    let completed = poll_session_until(app, session_id, "completed", 50).await;
+    let result = completed["result"].as_str().expect("result");
+    assert!(result.contains("sandboxd-stub executed"));
+    assert!(result.contains("run_shell"));
+}
+
+#[tokio::test]
 async fn api_approve_requires_pending_session() {
     let app = app_for_tests(AppConfig::default());
     let (status, _) = json_request(
