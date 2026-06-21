@@ -64,6 +64,25 @@ High-risk shell still requires human approval (by design):
 
 ozr submits a sandboxd task with agent `opencode` (see `OZR_SANDBOXD_AGENT`). The isolated agent runs inside the sandbox container; results are polled from `GET /v1/sandboxes/{id}/tasks/{taskId}`.
 
+Recommended poll budget for opencode tasks (set automatically by `wire-sandboxd.sh`):
+
+```bash
+OZR_SANDBOXD_POLL_ATTEMPTS=120
+OZR_SANDBOXD_POLL_INTERVAL_MS=2000
+OZR_SANDBOXD_POLL_MAX_INTERVAL_MS=10000
+OZR_BUDGET_MAX_RUN_SECONDS=900
+```
+
+**Tauri GUI:** after wiring, restart `npm run tauri dev` so the spawned `ozr serve` loads `.ozr/config.env` from the repo root (includes sandboxd settings).
+
+Live API smoke (approve + wait for sandboxd task):
+
+```bash
+chmod +x scripts/test-sandboxd-shell-api.sh
+./target/debug/ozr serve   # from repo root
+./scripts/test-sandboxd-shell-api.sh
+```
+
 Optional: capture SSE events to `.ozr/audit/sandboxd-events-*.json`:
 
 ```bash

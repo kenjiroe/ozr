@@ -92,6 +92,10 @@ upsert_env OZR_SANDBOXD_SANDBOX_ID "$SANDBOX_ID"
 upsert_env OZR_SANDBOXD_REQUIRE_AUTH false
 upsert_env OZR_SANDBOXD_HTTPS_ONLY false
 upsert_env OZR_SANDBOXD_AGENT opencode
+upsert_env OZR_SANDBOXD_POLL_ATTEMPTS 120
+upsert_env OZR_SANDBOXD_POLL_INTERVAL_MS 2000
+upsert_env OZR_SANDBOXD_POLL_MAX_INTERVAL_MS 10000
+upsert_env OZR_BUDGET_MAX_RUN_SECONDS 900
 
 echo ""
 echo "Wrote sandboxd settings to $CONFIG"

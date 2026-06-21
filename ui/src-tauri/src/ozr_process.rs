@@ -35,6 +35,7 @@ impl OzrProcess {
         }
 
         let binary = resolve_ozr_binary()?;
+        let repo_root = repo_root_from_manifest()?;
         let bind = self
             .api_base
             .strip_prefix("http://")
@@ -43,6 +44,7 @@ impl OzrProcess {
 
         let mut child = Command::new(&binary)
             .arg("serve")
+            .current_dir(&repo_root)
             .env("OZR_API_BIND", bind)
             .env("OZR_LLM_BACKEND", "mock")
             .env("OZR_MCP_BACKEND", "mock")
@@ -160,8 +162,7 @@ fn resolve_ozr_binary() -> Result<PathBuf, String> {
         return Err(format!("OZR_BINARY points to missing file: {path}"));
     }
 
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let repo_root = manifest_dir.join("../..");
+    let repo_root = repo_root_from_manifest()?;
     for name in ["target/debug/ozr", "target/release/ozr"] {
         let candidate = repo_root.join(name);
         if candidate.is_file() {
@@ -170,4 +171,16 @@ fn resolve_ozr_binary() -> Result<PathBuf, String> {
     }
 
     Ok(PathBuf::from("ozr"))
+}
+
+fn repo_root_from_manifest() -> Result<PathBuf, String> {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    repo_root_from_manifest_dir(&manifest_dir)
+}
+
+fn repo_root_from_manifest_dir(manifest_dir: &PathBuf) -> Result<PathBuf, String> {
+    manifest_dir
+        .join("../..")
+        .canonicalize()
+        .map_err(|err| format!("failed to resolve ozr repo root: {err}"))
 }
