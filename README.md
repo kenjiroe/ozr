@@ -9,7 +9,7 @@ ozr orchestrates LLM planning, MCP tool execution, human approval, and audit log
 - **Security-first guardrails** — unknown tools escalate to high-risk `Shell`; medium/high actions block on human approval.
 - **Non-blocking runtime** — agent runs spawn on Tokio; API sessions poll independently (approval + concurrent `/v1/run` supported).
 - **Provider-agnostic** — mock, OpenAI-compatible, Anthropic, Gemini, and Ollama LLM backends; MCP via mock or stdio.
-- **Isolated execution (optional)** — route Write/Shell/Network actions through [sandboxd](docs/sandboxd-production.md) when configured.
+Optional isolated execution via [sandboxd](docs/sandboxd-local.md) (local setup guide).
 - **Audit-ready** — run logs, session checkpoints, replay reports under `.ozr/`.
 
 ## Quick start
