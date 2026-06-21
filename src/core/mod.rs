@@ -1,7 +1,7 @@
+pub mod agent_loop;
 pub mod approval;
 pub mod approval_insights;
 pub mod approval_report;
-pub mod agent_loop;
 pub mod audit;
 pub mod budget;
 pub mod config;
@@ -20,8 +20,8 @@ pub mod memory_orchestrator;
 pub mod memory_sqlite;
 pub mod policy;
 pub mod policy_pack;
-pub mod runtime;
 pub mod replay;
+pub mod runtime;
 pub mod sandbox_executor;
 pub mod sandboxd_policy;
 pub mod session_recovery;

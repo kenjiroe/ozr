@@ -7,9 +7,7 @@ use crate::core::mcp_client::McpClient;
 use crate::core::memory::MemoryStore;
 use crate::core::policy::{PlannedAction, PolicyEngine, RiskTier};
 use crate::core::sandbox_executor::SandboxExecutor;
-use crate::core::session_recovery::{
-    begin_session, complete_session, fail_session, touch_session,
-};
+use crate::core::session_recovery::{begin_session, complete_session, fail_session, touch_session};
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -89,33 +87,49 @@ impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
             let _ = touch_session(&run_id, &format!("plan_tool:{}", action.tool));
 
             let gate = guardrail.check_plan(&action);
-            self.audit
-                .append(&run_id, &format!("plan_evaluated:{}", tier_label(gate.tier)))?;
-            let _ = touch_session(&run_id, &format!("plan_evaluated:{}", tier_label(gate.tier)));
+            self.audit.append(
+                &run_id,
+                &format!("plan_evaluated:{}", tier_label(gate.tier)),
+            )?;
+            let _ = touch_session(
+                &run_id,
+                &format!("plan_evaluated:{}", tier_label(gate.tier)),
+            );
 
             if gate.requires_approval {
-                let approval = self.approver.request(&action, gate.tier, &plan.params).await?;
+                let approval = self
+                    .approver
+                    .request(&action, gate.tier, &plan.params)
+                    .await?;
                 match approval.decision {
                     ApprovalDecision::Approve => {
-                        self.audit
-                            .append(&run_id, &format!("approved:{}:{}", action.tool, approval.reason))?;
+                        self.audit.append(
+                            &run_id,
+                            &format!("approved:{}:{}", action.tool, approval.reason),
+                        )?;
                     }
                     ApprovalDecision::Deny => {
-                        self.audit
-                            .append(&run_id, &format!("denied:{}:{}", action.tool, approval.reason))?;
+                        self.audit.append(
+                            &run_id,
+                            &format!("denied:{}:{}", action.tool, approval.reason),
+                        )?;
                         let _ = fail_session(&run_id, "plan denied by approval gate");
                         return Err("plan denied by approval gate".into());
                     }
                     ApprovalDecision::Skip => {
-                        self.audit
-                            .append(&run_id, &format!("skipped:{}:{}", action.tool, approval.reason))?;
+                        self.audit.append(
+                            &run_id,
+                            &format!("skipped:{}:{}", action.tool, approval.reason),
+                        )?;
                         let _ = complete_session(&run_id);
                         return Ok("action skipped by operator".to_string());
                     }
                     ApprovalDecision::Retry => {
                         approval_attempts += 1;
-                        self.audit
-                            .append(&run_id, &format!("retry_requested:{}:{}", action.tool, approval.reason))?;
+                        self.audit.append(
+                            &run_id,
+                            &format!("retry_requested:{}:{}", action.tool, approval.reason),
+                        )?;
 
                         if approval_attempts > 2 {
                             return self.fail_run(&run_id, "approval retry limit exceeded");
@@ -136,13 +150,18 @@ impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
                             return self.fail_run(&run_id, "edited plan params are empty");
                         }
                         plan.params = approval.edited_params.clone();
-                        self.audit
-                            .append(&run_id, &format!("plan_edited:{}:{}", action.tool, approval.reason))?;
+                        self.audit.append(
+                            &run_id,
+                            &format!("plan_edited:{}:{}", action.tool, approval.reason),
+                        )?;
                     }
                 }
             }
 
-            let tool_result = self.executor.execute(&action, &plan.params, &self.mcp).await?;
+            let tool_result = self
+                .executor
+                .execute(&action, &plan.params, &self.mcp)
+                .await?;
             self.audit
                 .append(&run_id, &format!("tool_executed:{}", action.tool))?;
             if let Some(task_id) = extract_sandboxd_task_id(&tool_result) {
@@ -175,7 +194,9 @@ impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::approval::{ApprovalDecision, ApprovalGate, ApprovalMode, ApprovalOutcome, CliApprovalGate};
+    use crate::core::approval::{
+        ApprovalDecision, ApprovalGate, ApprovalMode, ApprovalOutcome, CliApprovalGate,
+    };
     use crate::core::llm_adapter::{LlmProvider, ToolCallPlan};
     use crate::core::mcp_client::MockMcpClient;
     use crate::core::policy::ActionKind;
@@ -226,7 +247,10 @@ mod tests {
 
     #[tokio::test]
     async fn transition_denied_plan_stops_before_execute() {
+        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
+        let checkpoint = dir.path().join("checkpoint.json");
+        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -242,11 +266,15 @@ mod tests {
         );
         let result = engine.run_once("deny write").await;
         assert!(result.is_err());
+        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
     }
 
     #[tokio::test]
     async fn transition_medium_risk_hits_approval_gate() {
+        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
+        let checkpoint = dir.path().join("checkpoint.json");
+        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -262,6 +290,7 @@ mod tests {
         );
         let result = engine.run_once("write file").await;
         assert!(result.is_err());
+        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
     }
 }
 

@@ -180,10 +180,7 @@ pub async fn write_ndjson_message_async<W: tokio::io::AsyncWriteExt + Unpin>(
         .write_all(payload.as_bytes())
         .await
         .map_err(|e| e.to_string())?;
-    writer
-        .write_all(b"\n")
-        .await
-        .map_err(|e| e.to_string())?;
+    writer.write_all(b"\n").await.map_err(|e| e.to_string())?;
     writer.flush().await.map_err(|e| e.to_string())
 }
 

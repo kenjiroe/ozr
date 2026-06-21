@@ -116,9 +116,7 @@ async fn approve_session(
     let decision = parse_decision(&body.decision);
     let reason = if body.reason.trim().is_empty() {
         match decision {
-            crate::core::approval::ApprovalDecision::Approve => {
-                "approved via api".to_string()
-            }
+            crate::core::approval::ApprovalDecision::Approve => "approved via api".to_string(),
             crate::core::approval::ApprovalDecision::Deny => "denied via api".to_string(),
             crate::core::approval::ApprovalDecision::Skip => "skipped via api".to_string(),
             crate::core::approval::ApprovalDecision::Retry => "retry via api".to_string(),

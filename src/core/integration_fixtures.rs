@@ -2,7 +2,9 @@ use crate::core::config::AppConfig;
 use crate::core::embedding::EmbeddingSettings;
 use crate::core::json_util::parse_json;
 use crate::core::sandbox_executor::SandboxdSettings;
-use crate::core::sandboxd_policy::{evaluate_production_checklist, validate_sandboxd_transport, CheckStatus};
+use crate::core::sandboxd_policy::{
+    evaluate_production_checklist, validate_sandboxd_transport, CheckStatus,
+};
 use crate::core::vector_backend::QdrantVectorBackend;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -28,7 +30,8 @@ pub fn run_sandboxd_fixture(cfg: &AppConfig) -> Result<FixtureReport, String> {
     let settings = sandboxd_settings_from_config(cfg);
     if !settings.is_ready() {
         return Err(
-            "sandboxd fixture requires OZR_SANDBOXD_API_BASE and OZR_SANDBOXD_SANDBOX_ID".to_string(),
+            "sandboxd fixture requires OZR_SANDBOXD_API_BASE and OZR_SANDBOXD_SANDBOX_ID"
+                .to_string(),
         );
     }
 
@@ -133,10 +136,7 @@ fn integration_collection_name(base: &str) -> String {
 }
 
 fn delete_collection(backend: &QdrantVectorBackend) -> Result<(), String> {
-    let url = format!(
-        "{}/collections/{}",
-        backend.base_url, backend.collection
-    );
+    let url = format!("{}/collections/{}", backend.base_url, backend.collection);
     let _ = curl_request("DELETE", &url, qdrant_headers(backend), None)?;
     Ok(())
 }
@@ -168,7 +168,10 @@ fn curl_request(
 ) -> Result<(i32, String), String> {
     let mut header_args = String::new();
     for (name, value) in headers {
-        header_args.push_str(&format!(" -H {}", shell_quote(&format!("{}: {}", name, value))));
+        header_args.push_str(&format!(
+            " -H {}",
+            shell_quote(&format!("{}: {}", name, value))
+        ));
     }
     let data_flag = match body {
         Some(payload) => format!(

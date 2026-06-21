@@ -113,7 +113,11 @@ impl QdrantVectorBackend {
             return Ok(Vec::new());
         }
 
-        if self.embeddings.as_ref().is_some_and(EmbeddingSettings::is_ready) {
+        if self
+            .embeddings
+            .as_ref()
+            .is_some_and(EmbeddingSettings::is_ready)
+        {
             let vector = self.build_vector(query)?;
             let url = format!(
                 "{}/collections/{}/points/search",
@@ -188,9 +192,7 @@ impl QdrantVectorBackend {
         if let Some(settings) = &self.embeddings {
             if settings.is_ready() {
                 let vector = settings.embed(text)?;
-                return Ok(Value::Array(
-                    vector.into_iter().map(Value::from).collect(),
-                ));
+                return Ok(Value::Array(vector.into_iter().map(Value::from).collect()));
             }
         }
         Ok(json!([0.0]))

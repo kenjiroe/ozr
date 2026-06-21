@@ -232,9 +232,7 @@ async fn openai_chat_completions_returns_assistant_message() {
         app,
         "POST",
         "/v1/chat/completions",
-        Some(
-            r#"{"model":"ozr","messages":[{"role":"user","content":"read docs"}]}"#.to_string(),
-        ),
+        Some(r#"{"model":"ozr","messages":[{"role":"user","content":"read docs"}]}"#.to_string()),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -253,9 +251,7 @@ async fn openai_chat_completions_rejects_streaming() {
         app,
         "POST",
         "/v1/chat/completions",
-        Some(
-            r#"{"stream":true,"messages":[{"role":"user","content":"read docs"}]}"#.to_string(),
-        ),
+        Some(r#"{"stream":true,"messages":[{"role":"user","content":"read docs"}]}"#.to_string()),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);

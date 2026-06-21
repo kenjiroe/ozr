@@ -79,8 +79,8 @@ struct JsonRpcResponse {
 }
 
 pub fn parse_json_rpc_response(payload: &str) -> Result<Value, String> {
-    let response: JsonRpcResponse = serde_json::from_str(payload)
-        .map_err(|e| format!("invalid json-rpc response: {}", e))?;
+    let response: JsonRpcResponse =
+        serde_json::from_str(payload).map_err(|e| format!("invalid json-rpc response: {}", e))?;
     if let Some(error) = response.error {
         return Err(format!("json-rpc error: {}", error));
     }
@@ -131,8 +131,8 @@ struct OpenAiEmbeddingItem {
 }
 
 pub fn parse_openai_embedding(payload: &str) -> Result<Vec<f64>, String> {
-    let response: OpenAiEmbeddingResponse = serde_json::from_str(payload)
-        .map_err(|e| format!("invalid embedding response: {}", e))?;
+    let response: OpenAiEmbeddingResponse =
+        serde_json::from_str(payload).map_err(|e| format!("invalid embedding response: {}", e))?;
     let embedding = response
         .data
         .and_then(|items| items.into_iter().next())
@@ -152,7 +152,9 @@ pub fn mcp_tool_names(result: &Value) -> Vec<String> {
         .collect()
 }
 
-pub fn mcp_tool_definitions(result: &Value) -> Vec<crate::core::mcp_tool_catalog::McpToolDefinition> {
+pub fn mcp_tool_definitions(
+    result: &Value,
+) -> Vec<crate::core::mcp_tool_catalog::McpToolDefinition> {
     use crate::core::mcp_tool_catalog::build_tool_definition;
     let tools = result
         .get("tools")
@@ -184,7 +186,11 @@ pub fn mcp_tool_text(result: &Value) -> Option<String> {
     None
 }
 
-pub fn qdrant_payload_hits(body: &str, query: &str, limit: usize) -> Result<Vec<(String, String, String)>, String> {
+pub fn qdrant_payload_hits(
+    body: &str,
+    query: &str,
+    limit: usize,
+) -> Result<Vec<(String, String, String)>, String> {
     let value = parse_json(body)?;
     let points = value
         .get("result")
@@ -217,7 +223,10 @@ pub fn qdrant_payload_hits(body: &str, query: &str, limit: usize) -> Result<Vec<
     Ok(hits)
 }
 
-pub fn qdrant_search_hits(body: &str, limit: usize) -> Result<Vec<(String, String, String, f64)>, String> {
+pub fn qdrant_search_hits(
+    body: &str,
+    limit: usize,
+) -> Result<Vec<(String, String, String, f64)>, String> {
     let value = parse_json(body)?;
     let points = value
         .get("result")
@@ -237,10 +246,7 @@ pub fn qdrant_search_hits(body: &str, limit: usize) -> Result<Vec<(String, Strin
         }
         let source = json_string_field(payload, "source");
         let layer = json_string_field(payload, "layer");
-        let score = point
-            .get("score")
-            .and_then(Value::as_f64)
-            .unwrap_or(0.0);
+        let score = point.get("score").and_then(Value::as_f64).unwrap_or(0.0);
         hits.push((content, source, layer, score));
         if hits.len() >= limit {
             break;
@@ -291,14 +297,22 @@ pub fn parse_sandboxd_sse_capture(raw: &str) -> SandboxdEventCapture {
             continue;
         }
         if line.trim().is_empty() && (!current_event.is_empty() || !data_lines.is_empty()) {
-            events.push(build_sse_event(current_id.take(), &current_event, &data_lines));
+            events.push(build_sse_event(
+                current_id.take(),
+                &current_event,
+                &data_lines,
+            ));
             current_event.clear();
             data_lines.clear();
         }
     }
 
     if !current_event.is_empty() || !data_lines.is_empty() {
-        events.push(build_sse_event(current_id.take(), &current_event, &data_lines));
+        events.push(build_sse_event(
+            current_id.take(),
+            &current_event,
+            &data_lines,
+        ));
     }
 
     if events.is_empty() && !raw.trim().is_empty() {
@@ -394,8 +408,8 @@ struct AnthropicContent {
 }
 
 pub fn parse_anthropic_content(payload: &str) -> Result<String, String> {
-    let response: AnthropicResponse = serde_json::from_str(payload)
-        .map_err(|e| format!("invalid anthropic response: {}", e))?;
+    let response: AnthropicResponse =
+        serde_json::from_str(payload).map_err(|e| format!("invalid anthropic response: {}", e))?;
     let content = response
         .content
         .and_then(|items| items.into_iter().next())
@@ -429,8 +443,8 @@ struct GeminiPart {
 }
 
 pub fn parse_gemini_content(payload: &str) -> Result<String, String> {
-    let response: GeminiResponse = serde_json::from_str(payload)
-        .map_err(|e| format!("invalid gemini response: {}", e))?;
+    let response: GeminiResponse =
+        serde_json::from_str(payload).map_err(|e| format!("invalid gemini response: {}", e))?;
     let content = response
         .candidates
         .and_then(|items| items.into_iter().next())
@@ -457,8 +471,8 @@ struct OllamaMessage {
 }
 
 pub fn parse_ollama_content(payload: &str) -> Result<String, String> {
-    let response: OllamaChatResponse = serde_json::from_str(payload)
-        .map_err(|e| format!("invalid ollama response: {}", e))?;
+    let response: OllamaChatResponse =
+        serde_json::from_str(payload).map_err(|e| format!("invalid ollama response: {}", e))?;
     let content = response
         .message
         .and_then(|message| message.content)
@@ -529,26 +543,25 @@ mod tests {
 
     #[test]
     fn parses_sandboxd_task_status() {
-        let status = parse_sandboxd_task_status(
-            r#"{"status":"succeeded","result":"done","error":null}"#,
-        )
-        .unwrap();
+        let status =
+            parse_sandboxd_task_status(r#"{"status":"succeeded","result":"done","error":null}"#)
+                .unwrap();
         assert_eq!(status.status.as_deref(), Some("succeeded"));
         assert_eq!(status.result_text(), "done");
     }
 
     #[test]
     fn parses_openai_content() {
-        let content = parse_openai_chat_content(
-            r#"{"choices":[{"message":{"content":"read_file"}}]}"#,
-        )
-        .unwrap();
+        let content =
+            parse_openai_chat_content(r#"{"choices":[{"message":{"content":"read_file"}}]}"#)
+                .unwrap();
         assert_eq!(content, "read_file");
     }
 
     #[test]
     fn parses_mcp_tools() {
-        let result = parse_json(r#"{"tools":[{"name":"read_file"},{"name":"list_tools"}]}"#).unwrap();
+        let result =
+            parse_json(r#"{"tools":[{"name":"read_file"},{"name":"list_tools"}]}"#).unwrap();
         assert_eq!(mcp_tool_names(&result), vec!["read_file", "list_tools"]);
     }
 
@@ -569,19 +582,16 @@ mod tests {
 
     #[test]
     fn parses_anthropic_content() {
-        let content = parse_anthropic_content(
-            r#"{"content":[{"type":"text","text":"read_file"}]}"#,
-        )
-        .unwrap();
+        let content =
+            parse_anthropic_content(r#"{"content":[{"type":"text","text":"read_file"}]}"#).unwrap();
         assert_eq!(content, "read_file");
     }
 
     #[test]
     fn parses_gemini_content() {
-        let content = parse_gemini_content(
-            r#"{"candidates":[{"content":{"parts":[{"text":"hello"}]}}]}"#,
-        )
-        .unwrap();
+        let content =
+            parse_gemini_content(r#"{"candidates":[{"content":{"parts":[{"text":"hello"}]}}]}"#)
+                .unwrap();
         assert_eq!(content, "hello");
     }
 

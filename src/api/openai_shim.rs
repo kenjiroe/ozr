@@ -90,14 +90,13 @@ pub async fn chat_completions(
     })?;
 
     if prompt.trim().is_empty() {
-        return Err(OpenAiShimError::bad_request("user prompt must not be empty"));
+        return Err(OpenAiShimError::bad_request(
+            "user prompt must not be empty",
+        ));
     }
 
     let session_id = SessionStore::new_session_id();
-    state
-        .sessions
-        .create(&session_id, prompt.clone())
-        .await;
+    state.sessions.create(&session_id, prompt.clone()).await;
 
     let cfg = state.cfg.clone();
     let store = state.sessions.clone();

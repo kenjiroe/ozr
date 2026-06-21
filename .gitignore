@@ -4,3 +4,5 @@ ui/node_modules
 ui/dist
 ui/src-tauri/target
 .ozr
+.env
+.env.local

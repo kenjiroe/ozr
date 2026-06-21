@@ -51,7 +51,9 @@ pub fn default_filesystem_stdio_config(root: &Path) -> (String, Vec<String>, Mcp
 }
 
 fn split_stdio_args(raw: &str) -> Vec<String> {
-    raw.split_whitespace().map(|value| value.to_string()).collect()
+    raw.split_whitespace()
+        .map(|value| value.to_string())
+        .collect()
 }
 
 #[async_trait]
@@ -168,7 +170,8 @@ impl StdioMcpClient {
         let timeout_ms = self.timeout_ms;
         let framing = self.framing;
         self.with_retries(|| async {
-            let mut session = AsyncStdioMcpSession::spawn(&command, &args, timeout_ms, framing).await?;
+            let mut session =
+                AsyncStdioMcpSession::spawn(&command, &args, timeout_ms, framing).await?;
             session.initialize().await?;
             let result = session.request("tools/list", json!({})).await?;
             let tools = mcp_tool_definitions(&result);
@@ -205,8 +208,8 @@ impl McpClient for StdioMcpClient {
             return Err("mcp stdio client not configured".to_string());
         }
         let payload = build_mcp_tools_call_payload(tool, params);
-        let params_value: Value =
-            serde_json::from_str(&payload).unwrap_or_else(|_| json!({"name": tool, "arguments": {}}));
+        let params_value: Value = serde_json::from_str(&payload)
+            .unwrap_or_else(|_| json!({"name": tool, "arguments": {}}));
         let command = self.command.clone();
         let args = self.args.clone();
         let timeout_ms = self.timeout_ms;
@@ -292,7 +295,8 @@ impl AsyncStdioMcpSession {
     async fn initialize(&mut self) -> Result<(), String> {
         let init_id = self.next_id;
         self.next_id += 1;
-        self.write_message(&build_initialize_request(init_id)).await?;
+        self.write_message(&build_initialize_request(init_id))
+            .await?;
         let init_response = self.read_until_id(init_id).await?;
         parse_json_rpc_response(&init_response)?;
         self.write_message(&build_initialized_notification())

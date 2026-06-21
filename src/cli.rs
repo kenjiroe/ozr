@@ -9,15 +9,17 @@ use crate::core::embedding::EmbeddingSettings;
 use crate::core::llm_adapter::{build_llm_provider, LlmProvider};
 use crate::core::mcp_client::{build_mcp_client, McpClient};
 use crate::core::memory::MemoryStore;
-use crate::core::memory_orchestrator::{LayeredMemoryOrchestrator, MemoryOrchestrator, RecallBudget};
+use crate::core::memory_orchestrator::{
+    LayeredMemoryOrchestrator, MemoryOrchestrator, RecallBudget,
+};
 use crate::core::policy::PolicyEngine;
 use crate::core::policy_pack::{BudgetPreset, PolicyPack};
+use crate::core::replay::generate_replay_report;
 use crate::core::sandbox_executor::{RuntimeExecutor, SandboxdSettings};
 use crate::core::sandboxd_policy::{
     checklist_template, evaluate_production_checklist, policy_summary, render_checklist_markdown,
     CheckStatus,
 };
-use crate::core::replay::generate_replay_report;
 use crate::core::session_recovery::{
     detect_interrupted_checkpoint, load_checkpoint, recoverable_prompt, render_status,
 };
@@ -93,9 +95,7 @@ async fn serve_api() -> CliResult<()> {
     memory.ensure_layout()?;
     println!("ozr api listening on http://{}", cfg.api_bind);
     println!("endpoints: POST /v1/run | GET /v1/session/{{id}} | POST /v1/session/{{id}}/approve | POST /v1/chat/completions");
-    crate::api::serve(cfg)
-        .await
-        .map_err(|err| err.into())
+    crate::api::serve(cfg).await.map_err(|err| err.into())
 }
 
 async fn run_prompt(prompt: &str) -> CliResult<()> {
@@ -227,8 +227,14 @@ fn show_config() -> CliResult<()> {
         "- OZR_FEATURE_SANDBOXD_EXECUTOR={} ",
         cfg.feature_sandboxd_executor
     );
-    println!("- OZR_FEATURE_MEMORY_LAYERED={} ", cfg.feature_memory_layered);
-    println!("- OZR_FEATURE_VECTOR_BACKEND={} ", cfg.feature_vector_backend);
+    println!(
+        "- OZR_FEATURE_MEMORY_LAYERED={} ",
+        cfg.feature_memory_layered
+    );
+    println!(
+        "- OZR_FEATURE_VECTOR_BACKEND={} ",
+        cfg.feature_vector_backend
+    );
     println!(
         "- OZR_FEATURE_PONYTAIL_PROFILE={} ",
         cfg.ponytail_mode.as_str()
@@ -236,7 +242,10 @@ fn show_config() -> CliResult<()> {
     println!("- OZR_APPROVAL_MODE={} ", cfg.approval_mode.as_str());
     println!("- OZR_LLM_BACKEND={} ", cfg.llm_backend);
     println!("- OZR_LLM_API_URL={} ", cfg.llm_api_url);
-    println!("- OZR_LLM_API_KEY_SET={} ", !cfg.llm_api_key.trim().is_empty());
+    println!(
+        "- OZR_LLM_API_KEY_SET={} ",
+        !cfg.llm_api_key.trim().is_empty()
+    );
     println!("- OZR_LLM_MODEL={} ", cfg.llm_model);
     println!("- OZR_MCP_BACKEND={} ", cfg.mcp_backend);
     println!("- OZR_MCP_STDIO_COMMAND={} ", cfg.mcp_stdio_command);
@@ -255,7 +264,10 @@ fn show_config() -> CliResult<()> {
     );
     println!("- OZR_SANDBOXD_SANDBOX_ID={} ", cfg.sandboxd_sandbox_id);
     println!("- OZR_SANDBOXD_AGENT={} ", cfg.sandboxd_agent);
-    println!("- OZR_SANDBOXD_POLL_ATTEMPTS={} ", cfg.sandboxd_poll_attempts);
+    println!(
+        "- OZR_SANDBOXD_POLL_ATTEMPTS={} ",
+        cfg.sandboxd_poll_attempts
+    );
     println!(
         "- OZR_SANDBOXD_POLL_INTERVAL_MS={} ",
         cfg.sandboxd_poll_interval_ms
@@ -280,7 +292,10 @@ fn show_config() -> CliResult<()> {
     println!("- OZR_SANDBOXD_HTTPS_ONLY={} ", cfg.sandboxd_https_only);
     println!("- OZR_MEMORY_RECALL_LIMIT={} ", cfg.memory_recall_limit);
     println!("- OZR_MEMORY_BACKEND={} ", cfg.memory_backend);
-    println!("- OZR_MEMORY_TRUST_THRESHOLD={} ", cfg.memory_trust_threshold);
+    println!(
+        "- OZR_MEMORY_TRUST_THRESHOLD={} ",
+        cfg.memory_trust_threshold
+    );
     println!(
         "- OZR_MEMORY_RECALL_TOKEN_BUDGET={} ",
         cfg.memory_recall_token_budget
@@ -313,7 +328,10 @@ fn show_config() -> CliResult<()> {
     );
     println!("- OZR_BUDGET_MAX_TOKENS={} ", cfg.budget_max_tokens);
     println!("- OZR_BUDGET_MAX_ITERATIONS={} ", cfg.budget_max_iterations);
-    println!("- OZR_BUDGET_MAX_RUN_SECONDS={} ", cfg.budget_max_run_seconds);
+    println!(
+        "- OZR_BUDGET_MAX_RUN_SECONDS={} ",
+        cfg.budget_max_run_seconds
+    );
     println!("- OZR_POLICY_PACK={} ", cfg.policy_pack);
     println!("- OZR_API_BIND={} ", cfg.api_bind);
     Ok(())
@@ -387,10 +405,8 @@ fn run_approval_insights() -> CliResult<()> {
 }
 
 fn run_approval_report() -> CliResult<()> {
-    let message = generate_approval_dashboard(
-        ".ozr/audit/runs.log",
-        ".ozr/audit/approval-dashboard.md",
-    )?;
+    let message =
+        generate_approval_dashboard(".ozr/audit/runs.log", ".ozr/audit/approval-dashboard.md")?;
     println!("{}", message);
     Ok(())
 }
@@ -477,7 +493,6 @@ fn ensure_sample_config() -> CliResult<()> {
     fs::write(config_path, sample)?;
     Ok(())
 }
-
 
 fn build_memory_orchestrator(cfg: &AppConfig) -> CliResult<LayeredMemoryOrchestrator> {
     let store = MemoryStore::new(".ozr");

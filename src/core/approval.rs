@@ -102,7 +102,9 @@ fn prompt_approval(action: &PlannedAction, tier: RiskTier) -> Result<ApprovalOut
         RiskTier::High => {
             println!("Type one of: approve | deny | skip | retry | edit");
             let mut token = String::new();
-            io::stdin().read_line(&mut token).map_err(|e| e.to_string())?;
+            io::stdin()
+                .read_line(&mut token)
+                .map_err(|e| e.to_string())?;
             let action_decision = parse_decision(token.trim());
             if action_decision == ApprovalDecision::Deny {
                 return Ok(ApprovalOutcome {
@@ -132,7 +134,9 @@ fn prompt_approval(action: &PlannedAction, tier: RiskTier) -> Result<ApprovalOut
                 print!("Edited params: ");
                 io::stdout().flush().map_err(|e| e.to_string())?;
                 let mut edited = String::new();
-                io::stdin().read_line(&mut edited).map_err(|e| e.to_string())?;
+                io::stdin()
+                    .read_line(&mut edited)
+                    .map_err(|e| e.to_string())?;
                 let edited = edited.trim().to_string();
                 if edited.is_empty() {
                     return Ok(ApprovalOutcome {
@@ -160,7 +164,9 @@ fn prompt_approval(action: &PlannedAction, tier: RiskTier) -> Result<ApprovalOut
             print!("Reason: ");
             io::stdout().flush().map_err(|e| e.to_string())?;
             let mut reason = String::new();
-            io::stdin().read_line(&mut reason).map_err(|e| e.to_string())?;
+            io::stdin()
+                .read_line(&mut reason)
+                .map_err(|e| e.to_string())?;
             let reason = reason.trim().to_string();
             if reason.is_empty() {
                 return Ok(ApprovalOutcome {
@@ -179,14 +185,18 @@ fn prompt_approval(action: &PlannedAction, tier: RiskTier) -> Result<ApprovalOut
         RiskTier::Medium | RiskTier::Low => {
             println!("Choose: approve(a) | deny(d) | skip(s) | retry(r) | edit(e)");
             let mut input = String::new();
-            io::stdin().read_line(&mut input).map_err(|e| e.to_string())?;
+            io::stdin()
+                .read_line(&mut input)
+                .map_err(|e| e.to_string())?;
             let decision = parse_decision(input.trim());
 
             if decision == ApprovalDecision::EditPlan {
                 print!("Edited params: ");
                 io::stdout().flush().map_err(|e| e.to_string())?;
                 let mut edited = String::new();
-                io::stdin().read_line(&mut edited).map_err(|e| e.to_string())?;
+                io::stdin()
+                    .read_line(&mut edited)
+                    .map_err(|e| e.to_string())?;
                 let edited = edited.trim().to_string();
                 if edited.is_empty() {
                     return Ok(ApprovalOutcome {

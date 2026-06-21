@@ -17,14 +17,10 @@ pub struct ChecklistItem {
 
 pub fn validate_sandboxd_transport(settings: &SandboxdSettings) -> Result<(), String> {
     if settings.require_auth && settings.api_token.trim().is_empty() {
-        return Err(
-            "sandboxd auth policy requires OZR_SANDBOXD_API_TOKEN to be set".to_string(),
-        );
+        return Err("sandboxd auth policy requires OZR_SANDBOXD_API_TOKEN to be set".to_string());
     }
     if settings.https_only && !settings.api_base.to_lowercase().starts_with("https://") {
-        return Err(
-            "sandboxd transport policy requires HTTPS OZR_SANDBOXD_API_BASE".to_string(),
-        );
+        return Err("sandboxd transport policy requires HTTPS OZR_SANDBOXD_API_BASE".to_string());
     }
     Ok(())
 }
@@ -149,7 +145,10 @@ pub fn evaluate_production_checklist(
         } else {
             CheckStatus::Warn
         },
-        format!("OZR_SANDBOXD_EVENTS_MAX_TIME_S={}", settings.events_max_time_s),
+        format!(
+            "OZR_SANDBOXD_EVENTS_MAX_TIME_S={}",
+            settings.events_max_time_s
+        ),
         "Set OZR_SANDBOXD_EVENTS_MAX_TIME_S>=2 when event capture is enabled".to_string(),
     ));
 
@@ -171,13 +170,25 @@ pub fn evaluate_production_checklist(
 }
 
 pub fn render_checklist_markdown(items: &[ChecklistItem], policy: &str) -> String {
-    let pass = items.iter().filter(|i| i.status == CheckStatus::Pass).count();
-    let warn = items.iter().filter(|i| i.status == CheckStatus::Warn).count();
-    let fail = items.iter().filter(|i| i.status == CheckStatus::Fail).count();
+    let pass = items
+        .iter()
+        .filter(|i| i.status == CheckStatus::Pass)
+        .count();
+    let warn = items
+        .iter()
+        .filter(|i| i.status == CheckStatus::Warn)
+        .count();
+    let fail = items
+        .iter()
+        .filter(|i| i.status == CheckStatus::Fail)
+        .count();
 
     let mut out = String::from("# Sandboxd Production Checklist\n\n");
     out.push_str(&format!("- policy: `{}`\n", policy));
-    out.push_str(&format!("- summary: pass={} warn={} fail={}\n\n", pass, warn, fail));
+    out.push_str(&format!(
+        "- summary: pass={} warn={} fail={}\n\n",
+        pass, warn, fail
+    ));
     out.push_str("## Checks\n\n");
     out.push_str("| ID | Status | Detail | Remediation |\n");
     out.push_str("|---|---|---|---|\n");
@@ -286,6 +297,8 @@ mod tests {
         let mut settings = base_settings();
         settings.api_token.clear();
         let items = evaluate_production_checklist(true, &settings);
-        assert!(items.iter().any(|item| item.id == "api-token" && item.status == CheckStatus::Fail));
+        assert!(items
+            .iter()
+            .any(|item| item.id == "api-token" && item.status == CheckStatus::Fail));
     }
 }

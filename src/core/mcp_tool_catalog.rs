@@ -92,10 +92,7 @@ mod tests {
     fn unknown_name_falls_back_to_shell() {
         assert_eq!(classify_action_kind_from_name("mystery_tool"), None);
         assert_eq!(infer_action_kind("mystery_tool"), ActionKind::Shell);
-        assert_eq!(
-            action_kind_for_tool(&[], "mystery_tool"),
-            ActionKind::Shell
-        );
+        assert_eq!(action_kind_for_tool(&[], "mystery_tool"), ActionKind::Shell);
     }
 
     #[test]

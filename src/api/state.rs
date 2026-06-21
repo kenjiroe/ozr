@@ -89,7 +89,9 @@ impl SessionStore {
 
     pub async fn get_view(&self, session_id: &str) -> Option<SessionView> {
         let sessions = self.inner.read().await;
-        sessions.get(session_id).map(|session| self.to_view(session_id, session))
+        sessions
+            .get(session_id)
+            .map(|session| self.to_view(session_id, session))
     }
 
     pub async fn register_pending(
@@ -129,7 +131,10 @@ impl SessionStore {
             .get(session_id)
             .ok_or_else(|| "session not found".to_string())?;
         if session.status != SessionStatus::PendingApproval {
-            return Err(format!("session is not pending approval: {:?}", session.status));
+            return Err(format!(
+                "session is not pending approval: {:?}",
+                session.status
+            ));
         }
         let pending = session
             .pending

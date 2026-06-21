@@ -60,9 +60,18 @@ async fn mcp_filesystem_maps_action_kinds() {
         return;
     }
     let client = filesystem_client();
-    assert_eq!(client.action_kind_for("read_text_file").await, ActionKind::Read);
-    assert_eq!(client.action_kind_for("list_directory").await, ActionKind::Read);
-    assert_eq!(client.action_kind_for("write_file").await, ActionKind::Write);
+    assert_eq!(
+        client.action_kind_for("read_text_file").await,
+        ActionKind::Read
+    );
+    assert_eq!(
+        client.action_kind_for("list_directory").await,
+        ActionKind::Read
+    );
+    assert_eq!(
+        client.action_kind_for("write_file").await,
+        ActionKind::Write
+    );
     assert_eq!(client.action_kind_for("edit_file").await, ActionKind::Write);
     assert_eq!(client.action_kind_for("move_file").await, ActionKind::Write);
 }

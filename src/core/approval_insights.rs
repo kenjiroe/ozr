@@ -116,10 +116,7 @@ fn detect_alerts(stats: &ApprovalStats, thresholds: &InsightThresholds) -> Vec<S
     alerts
 }
 
-fn build_tuning_suggestions(
-    stats: &ApprovalStats,
-    thresholds: &InsightThresholds,
-) -> Vec<String> {
+fn build_tuning_suggestions(stats: &ApprovalStats, thresholds: &InsightThresholds) -> Vec<String> {
     let mut suggestions = Vec::new();
     let decisions = stats.approved + stats.denied + stats.skipped;
 
@@ -169,7 +166,8 @@ fn build_tuning_suggestions(
     }
 
     if suggestions.is_empty() {
-        suggestions.push("No policy tuning needed yet; current approval metrics look stable.".to_string());
+        suggestions
+            .push("No policy tuning needed yet; current approval metrics look stable.".to_string());
     }
 
     suggestions

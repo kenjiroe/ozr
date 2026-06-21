@@ -56,10 +56,7 @@ pub fn load_runs(log_path: &str) -> Result<Vec<RunRecord>, String> {
         .collect())
 }
 
-pub fn load_runs_with_artifacts(
-    log_path: &str,
-    audit_dir: &str,
-) -> Result<Vec<RunRecord>, String> {
+pub fn load_runs_with_artifacts(log_path: &str, audit_dir: &str) -> Result<Vec<RunRecord>, String> {
     let mut runs = load_runs(log_path)?;
     let artifacts = list_sandboxd_artifacts(audit_dir)?;
     for run in &mut runs {
@@ -116,10 +113,7 @@ pub fn render_replay_markdown(run: &RunRecord) -> String {
         empty_as(&run.failure_reason, "none")
     ));
     if !run.sandboxd_task_id.is_empty() {
-        out.push_str(&format!(
-            "- sandboxd_task_id: `{}`\n",
-            run.sandboxd_task_id
-        ));
+        out.push_str(&format!("- sandboxd_task_id: `{}`\n", run.sandboxd_task_id));
     }
     out.push_str("\n## Timeline\n\n");
     out.push_str("| ts | event |\n|---|---|\n");
@@ -203,11 +197,7 @@ fn classify_run(events: &[(u64, String)]) -> (RunOutcome, String) {
             failure_reason = event.clone();
         } else if event.starts_with("loop_failed:") {
             outcome = RunOutcome::Incomplete;
-            failure_reason = event
-                .split(':')
-                .skip(1)
-                .collect::<Vec<_>>()
-                .join(":");
+            failure_reason = event.split(':').skip(1).collect::<Vec<_>>().join(":");
         }
     }
 

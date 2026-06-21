@@ -157,9 +157,7 @@ impl MemoryIndex {
         let mut hits = Vec::new();
         for row in rows {
             let (content, source_path, run_id, event_type) = row.map_err(|e| e.to_string())?;
-            let source = source_path
-                .or(run_id)
-                .unwrap_or(event_type);
+            let source = source_path.or(run_id).unwrap_or(event_type);
             hits.push(MemoryHit {
                 layer: "session".to_string(),
                 source,
@@ -425,7 +423,9 @@ fn parse_legacy_state(raw: &str) -> Result<LegacyState, String> {
             state.facts.push(fact);
         } else if trimmed.starts_with("meta:indexed_source:") {
             let source = trimmed.trim_start_matches("meta:indexed_source:");
-            state.indexed_sources.insert(decode_legacy_optional(source).unwrap_or_default());
+            state
+                .indexed_sources
+                .insert(decode_legacy_optional(source).unwrap_or_default());
         }
     }
     Ok(state)

@@ -38,6 +38,9 @@ async fn mcp_stdio_calls_read_file_fixture() {
 #[tokio::test]
 async fn mcp_stdio_maps_write_file_to_write_kind() {
     let client = fixture_client();
-    assert_eq!(client.action_kind_for("write_file").await, ActionKind::Write);
+    assert_eq!(
+        client.action_kind_for("write_file").await,
+        ActionKind::Write
+    );
     assert_eq!(client.action_kind_for("read_file").await, ActionKind::Read);
 }

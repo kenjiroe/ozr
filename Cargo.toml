@@ -3,6 +3,9 @@ name = "ozr"
 version = "0.1.0"
 authors = ["Kenjiro Sarjonator <sarjonator@gmail.com>"]
 edition = "2021"
+license = "MIT"
+description = "Security-first async agent harness for MCP with approval gates and sandbox execution"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

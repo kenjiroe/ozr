@@ -61,7 +61,8 @@ pub fn begin_session(run_id: &str, prompt: &str) -> Result<(), String> {
 }
 
 pub fn touch_session(run_id: &str, last_event: &str) -> Result<(), String> {
-    let mut checkpoint = load_checkpoint()?.ok_or_else(|| "session checkpoint missing".to_string())?;
+    let mut checkpoint =
+        load_checkpoint()?.ok_or_else(|| "session checkpoint missing".to_string())?;
     if checkpoint.run_id != run_id {
         return Err("session checkpoint run_id mismatch".to_string());
     }
@@ -118,7 +119,8 @@ pub fn render_status(checkpoint: &SessionCheckpoint) -> String {
 }
 
 fn update_status(run_id: &str, status: SessionStatus, reason: &str) -> Result<(), String> {
-    let mut checkpoint = load_checkpoint()?.ok_or_else(|| "session checkpoint missing".to_string())?;
+    let mut checkpoint =
+        load_checkpoint()?.ok_or_else(|| "session checkpoint missing".to_string())?;
     if checkpoint.run_id != run_id {
         return Err("session checkpoint run_id mismatch".to_string());
     }
@@ -181,6 +183,7 @@ mod tests {
     }
 
     fn with_temp_path<F: FnOnce()>(test: F) {
+        let _guard = crate::test_support::env_test_lock();
         let path = temp_checkpoint_path();
         std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", &path);
         test();

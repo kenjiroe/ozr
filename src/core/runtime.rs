@@ -1,3 +1,4 @@
+use crate::core::agent_loop::AgentLoop;
 use crate::core::approval::ApprovalGate;
 use crate::core::audit::AuditLogger;
 use crate::core::budget::BudgetGuard;
@@ -8,7 +9,6 @@ use crate::core::memory::MemoryStore;
 use crate::core::policy::PolicyEngine;
 use crate::core::policy_pack::{BudgetPreset, PolicyPack};
 use crate::core::sandbox_executor::RuntimeExecutor;
-use crate::core::agent_loop::AgentLoop;
 use std::time::Duration;
 
 pub async fn run_agent_once<A: ApprovalGate>(
@@ -39,7 +39,10 @@ pub async fn run_agent_once<A: ApprovalGate>(
     let llm = build_llm_provider(cfg);
     let mcp = build_mcp_client(cfg);
 
-    run_agent_with_deps(cfg, prompt, policy, budget, llm, mcp, approver, memory, &mut audit).await
+    run_agent_with_deps(
+        cfg, prompt, policy, budget, llm, mcp, approver, memory, &mut audit,
+    )
+    .await
 }
 
 async fn run_agent_with_deps(

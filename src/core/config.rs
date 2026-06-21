@@ -138,12 +138,16 @@ impl AppConfig {
                 &file_values,
                 "none",
             ),
-            ponytail_mode: PonytailMode::from_env(
-                &resolve_value("OZR_FEATURE_PONYTAIL_PROFILE", &file_values, ""),
-            ),
-            approval_mode: ApprovalMode::from_env(
-                &resolve_value("OZR_APPROVAL_MODE", &file_values, ""),
-            ),
+            ponytail_mode: PonytailMode::from_env(&resolve_value(
+                "OZR_FEATURE_PONYTAIL_PROFILE",
+                &file_values,
+                "",
+            )),
+            approval_mode: ApprovalMode::from_env(&resolve_value(
+                "OZR_APPROVAL_MODE",
+                &file_values,
+                "",
+            )),
             llm_backend: resolve_value("OZR_LLM_BACKEND", &file_values, "mock"),
             llm_api_url: resolve_value(
                 "OZR_LLM_API_URL",
@@ -182,34 +186,32 @@ impl AppConfig {
                 700,
             ),
             sandboxd_poll_backoff_multiplier: parse_u64(
-                &resolve_value(
-                    "OZR_SANDBOXD_POLL_BACKOFF_MULTIPLIER",
-                    &file_values,
-                    "2",
-                ),
+                &resolve_value("OZR_SANDBOXD_POLL_BACKOFF_MULTIPLIER", &file_values, "2"),
                 2,
             ),
             sandboxd_poll_max_interval_ms: parse_u64(
-                &resolve_value(
-                    "OZR_SANDBOXD_POLL_MAX_INTERVAL_MS",
-                    &file_values,
-                    "4000",
-                ),
+                &resolve_value("OZR_SANDBOXD_POLL_MAX_INTERVAL_MS", &file_values, "4000"),
                 4_000,
             ),
-            sandboxd_capture_events: parse_bool(
-                &resolve_value("OZR_SANDBOXD_CAPTURE_EVENTS", &file_values, ""),
-            ),
+            sandboxd_capture_events: parse_bool(&resolve_value(
+                "OZR_SANDBOXD_CAPTURE_EVENTS",
+                &file_values,
+                "",
+            )),
             sandboxd_events_max_time_s: parse_u64(
                 &resolve_value("OZR_SANDBOXD_EVENTS_MAX_TIME_S", &file_values, "2"),
                 2,
             ),
-            sandboxd_require_auth: parse_bool(
-                &resolve_value("OZR_SANDBOXD_REQUIRE_AUTH", &file_values, ""),
-            ),
-            sandboxd_https_only: parse_bool(
-                &resolve_value("OZR_SANDBOXD_HTTPS_ONLY", &file_values, ""),
-            ),
+            sandboxd_require_auth: parse_bool(&resolve_value(
+                "OZR_SANDBOXD_REQUIRE_AUTH",
+                &file_values,
+                "",
+            )),
+            sandboxd_https_only: parse_bool(&resolve_value(
+                "OZR_SANDBOXD_HTTPS_ONLY",
+                &file_values,
+                "",
+            )),
             memory_recall_limit: parse_usize(
                 &resolve_value("OZR_MEMORY_RECALL_LIMIT", &file_values, "3"),
                 3,
@@ -226,9 +228,11 @@ impl AppConfig {
             qdrant_url: resolve_value("OZR_QDRANT_URL", &file_values, "http://127.0.0.1:6333"),
             qdrant_collection: resolve_value("OZR_QDRANT_COLLECTION", &file_values, "ozr_memory"),
             qdrant_api_key: resolve_value("OZR_QDRANT_API_KEY", &file_values, ""),
-            vector_embeddings: parse_bool(
-                &resolve_value("OZR_VECTOR_EMBEDDINGS", &file_values, ""),
-            ),
+            vector_embeddings: parse_bool(&resolve_value(
+                "OZR_VECTOR_EMBEDDINGS",
+                &file_values,
+                "",
+            )),
             embedding_api_url: resolve_value(
                 "OZR_EMBEDDING_API_URL",
                 &file_values,

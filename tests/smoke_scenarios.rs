@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use ozr::core::agent_loop::AgentLoop;
 use ozr::core::approval::{
     ApprovalDecision, ApprovalGate, ApprovalMode, ApprovalOutcome, CliApprovalGate,
@@ -5,11 +6,12 @@ use ozr::core::approval::{
 use ozr::core::audit::AuditLogger;
 use ozr::core::budget::BudgetGuard;
 use ozr::core::guardrail::Guardrail;
-use async_trait::async_trait;
 use ozr::core::llm_adapter::{LlmProvider, MockLlmProvider, ToolCallPlan};
 use ozr::core::mcp_client::MockMcpClient;
 use ozr::core::memory::MemoryStore;
-use ozr::core::policy::{ActionKind, Decision, PlannedAction, PolicyEngine, PonytailMode, RiskTier};
+use ozr::core::policy::{
+    ActionKind, Decision, PlannedAction, PolicyEngine, PonytailMode, RiskTier,
+};
 use ozr::core::replay::{load_runs, RunOutcome};
 use ozr::core::sandbox_executor::HostExecutor;
 use ozr::core::session_recovery::{load_checkpoint, SessionStatus};
@@ -80,14 +82,7 @@ async fn run_case(
     let mcp = MockMcpClient::default();
     let executor = HostExecutor::default();
     let mut loop_engine = AgentLoop::new(
-        policy,
-        budget,
-        llm,
-        mcp,
-        executor,
-        approver,
-        memory,
-        &mut audit,
+        policy, budget, llm, mcp, executor, approver, memory, &mut audit,
     );
     let result = loop_engine.run_once(prompt).await;
     std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
@@ -252,7 +247,9 @@ async fn smoke_09_session_checkpoint_completes() {
     .await
     .expect("run should complete");
     std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
-    let saved = load_checkpoint().expect("checkpoint load").expect("checkpoint exists");
+    let saved = load_checkpoint()
+        .expect("checkpoint load")
+        .expect("checkpoint exists");
     assert_eq!(saved.status, SessionStatus::Completed);
     std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
 }

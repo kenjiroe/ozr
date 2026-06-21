@@ -61,7 +61,10 @@ pub fn render_cross_trace_markdown(trace: &CrossTrace) -> String {
         out.push_str("- no sandboxd capture artifacts linked\n\n");
     } else {
         for summary in &trace.sandboxd_summaries {
-            out.push_str(&format!("- `{}`: total={}\n", summary.path, summary.total_events));
+            out.push_str(&format!(
+                "- `{}`: total={}\n",
+                summary.path, summary.total_events
+            ));
             for (event, count) in &summary.by_event {
                 out.push_str(&format!("  - {}: {}\n", event, count));
             }

@@ -1,5 +1,5 @@
 use crate::core::approval::ApprovalMode;
-use crate::core::policy::{PonytailMode, PolicyEngine};
+use crate::core::policy::{PolicyEngine, PonytailMode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PolicyPack {

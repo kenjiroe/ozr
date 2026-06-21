@@ -166,7 +166,10 @@ impl MemoryOrchestrator for LayeredMemoryOrchestrator {
         if let Some(index) = &self.index {
             index.compact_session(session_id, 50)
         } else {
-            Ok(format!("sqlite backend disabled; no compact for {}", session_id))
+            Ok(format!(
+                "sqlite backend disabled; no compact for {}",
+                session_id
+            ))
         }
     }
 }
@@ -201,7 +204,11 @@ fn parse_event(event: &str) -> (String, Option<String>, String) {
         if let Some(sep) = rest.find('|') {
             let run_id = &rest[..sep];
             let content = &rest[sep + 1..];
-            return ("run".to_string(), Some(run_id.to_string()), content.to_string());
+            return (
+                "run".to_string(),
+                Some(run_id.to_string()),
+                content.to_string(),
+            );
         }
     }
     if let Some(content) = event.strip_prefix("prompt=") {
@@ -223,7 +230,11 @@ fn maybe_extract_fact(index: &MemoryIndex, event: &str) {
     }
 }
 
-fn recall_from_files(store: &MemoryStore, query: &str, limit: usize) -> Result<Vec<MemoryHit>, String> {
+fn recall_from_files(
+    store: &MemoryStore,
+    query: &str,
+    limit: usize,
+) -> Result<Vec<MemoryHit>, String> {
     if limit == 0 {
         return Ok(Vec::new());
     }

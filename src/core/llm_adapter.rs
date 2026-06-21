@@ -137,10 +137,7 @@ impl HttpLlmProvider {
                 build_anthropic_payload(&request),
                 vec![
                     ("x-api-key".to_string(), self.api_key.trim().to_string()),
-                    (
-                        "anthropic-version".to_string(),
-                        "2023-06-01".to_string(),
-                    ),
+                    ("anthropic-version".to_string(), "2023-06-01".to_string()),
                 ],
             ),
             LlmWireFormat::Gemini => (build_gemini_payload(&request), Vec::new()),
@@ -262,9 +259,7 @@ impl CurlLlmProvider {
 #[async_trait]
 impl LlmProvider for CurlLlmProvider {
     async fn propose_plan(&self, prompt: &str, catalog: &[McpToolDefinition]) -> ToolCallPlan {
-        self.as_http_provider()
-            .build_plan(prompt, catalog)
-            .await
+        self.as_http_provider().build_plan(prompt, catalog).await
     }
 
     async fn summarize(&self, prompt: &str, tool_result: &str) -> String {
