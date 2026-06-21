@@ -1,0 +1,36 @@
+# ozr HTTP API — standalone (mock LLM/MCP by default).
+#
+# Quick start:
+#   docker compose up -d --build
+#   curl http://127.0.0.1:8080/health
+#
+# With sandboxd on the host (default install publishes :9090):
+#   OZR_FEATURE_SANDBOXD_EXECUTOR=true OZR_AUTO_WIRE_SANDBOXD=true docker compose up -d --build
+#
+# Full stack (ozr + sandboxd on shared Docker network):
+#   ./scripts/docker-up-full.sh
+
+services:
+  ozr:
+    build: .
+    image: ozr:local
+    ports:
+      - "${OZR_HTTP_PORT:-8080}:8080"
+    environment:
+      OZR_API_BIND: 0.0.0.0:8080
+      OZR_LLM_BACKEND: ${OZR_LLM_BACKEND:-mock}
+      OZR_MCP_BACKEND: ${OZR_MCP_BACKEND:-mock}
+      OZR_LLM_API_KEY: ${OZR_LLM_API_KEY:-}
+      OZR_APPROVAL_MODE: ${OZR_APPROVAL_MODE:-prompt}
+      OZR_FEATURE_SANDBOXD_EXECUTOR: ${OZR_FEATURE_SANDBOXD_EXECUTOR:-false}
+      OZR_SANDBOXD_API_BASE: ${OZR_SANDBOXD_API_BASE:-http://host.docker.internal:9090}
+      OZR_AUTO_WIRE_SANDBOXD: ${OZR_AUTO_WIRE_SANDBOXD:-false}
+      OZR_BUDGET_MAX_RUN_SECONDS: ${OZR_BUDGET_MAX_RUN_SECONDS:-900}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ozr-data:/app/.ozr
+    restart: unless-stopped
+
+volumes:
+  ozr-data:

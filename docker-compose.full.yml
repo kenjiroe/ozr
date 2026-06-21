@@ -1,0 +1,25 @@
+# Overlay: connect ozr to a running sandboxd stack on network `sandboxd_net`.
+#
+# Prerequisites:
+#   git clone https://github.com/tastyeffectco/sandboxd.git ../sandboxd
+#   cd ../sandboxd && docker compose up -d
+#
+# Then from ozr repo root:
+#   docker compose -f docker-compose.yml -f docker-compose.full.yml up -d --build
+#
+# Or use: ./scripts/docker-up-full.sh
+
+services:
+  ozr:
+    environment:
+      OZR_FEATURE_SANDBOXD_EXECUTOR: "true"
+      OZR_SANDBOXD_API_BASE: http://sandboxd:9000
+      OZR_AUTO_WIRE_SANDBOXD: "true"
+    networks:
+      - default
+      - sandboxd_net
+
+networks:
+  sandboxd_net:
+    external: true
+    name: sandboxd_net

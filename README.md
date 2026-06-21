@@ -63,6 +63,31 @@ cd ui && npm install && npm run tauri dev
 
 The GUI spawns `ozr serve` on `http://127.0.0.1:18787` by default. See [ui/README.md](ui/README.md).
 
+### Docker (API server)
+
+Standalone API (mock backends, persistent `.ozr` volume):
+
+```bash
+docker compose up -d --build
+curl http://127.0.0.1:8080/health
+```
+
+With **sandboxd on the host** (port 9090):
+
+```bash
+OZR_FEATURE_SANDBOXD_EXECUTOR=true OZR_AUTO_WIRE_SANDBOXD=true \
+  docker compose up -d --build
+```
+
+**Full stack** (ozr container + sandboxd on shared Docker network):
+
+```bash
+chmod +x scripts/docker-up-full.sh
+./scripts/docker-up-full.sh
+```
+
+See [docs/sandboxd-local.md](docs/sandboxd-local.md) for sandboxd details. Overlay file: `docker-compose.full.yml`.
+
 ## Configuration
 
 All settings use `OZR_*` environment variables or `.ozr/config.env`.
@@ -106,7 +131,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Status
 
-**v0.1.0-alpha** — core async engine, Axum API, OpenAI shim, approval gate, GUI alpha, and sandboxd executor abstraction (stub + API adapter). Streaming shim and live sandboxd integration are ongoing.
+**v0.1.0-alpha** — core async engine, Axum API, OpenAI shim, approval gate, GUI alpha, sandboxd executor (host + Docker deploy). Streaming shim and production hardening are ongoing.
 
 ## License
 

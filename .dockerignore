@@ -1,0 +1,12 @@
+target
+.git
+.github
+.ozr
+.env
+.env.local
+ui/node_modules
+ui/dist
+ui/src-tauri/target
+tests/fixtures/mcp-filesystem/node_modules
+**/*.md
+!README.md
