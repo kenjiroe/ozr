@@ -35,3 +35,5 @@ jobs:
         run: cargo test --test mcp_filesystem
       - name: cargo test (api)
         run: cargo test --test api
+      - name: cargo test (sandboxd api mock)
+        run: cargo test --test sandboxd_api
