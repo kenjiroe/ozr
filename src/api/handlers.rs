@@ -1,4 +1,5 @@
 use crate::api::approval_gate::ApiApprovalGate;
+use crate::api::openai_shim::chat_completions;
 use crate::api::state::{SessionStatus, SessionStore, SessionView};
 use crate::core::approval::{parse_decision, ApprovalOutcome};
 use crate::core::config::AppConfig;
@@ -49,6 +50,7 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/run", post(start_run))
         .route("/v1/session/{session_id}", get(get_session))
         .route("/v1/session/{session_id}/approve", post(approve_session))
+        .route("/v1/chat/completions", post(chat_completions))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

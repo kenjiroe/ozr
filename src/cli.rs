@@ -94,7 +94,7 @@ async fn serve_api() -> CliResult<()> {
     let memory = MemoryStore::new(".ozr");
     memory.ensure_layout()?;
     println!("ozr api listening on http://{}", cfg.api_bind);
-    println!("endpoints: POST /v1/run | GET /v1/session/{{id}} | POST /v1/session/{{id}}/approve");
+    println!("endpoints: POST /v1/run | GET /v1/session/{{id}} | POST /v1/session/{{id}}/approve | POST /v1/chat/completions");
     crate::api::serve(cfg)
         .await
         .map_err(|err| err.into())

@@ -191,6 +191,43 @@ async fn api_run_rejects_empty_prompt() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
+#[tokio::test]
+async fn openai_chat_completions_returns_assistant_message() {
+    let app = app_for_tests(AppConfig::default());
+    let (status, payload) = json_request(
+        app,
+        "POST",
+        "/v1/chat/completions",
+        Some(
+            r#"{"model":"ozr","messages":[{"role":"user","content":"read docs"}]}"#.to_string(),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(payload["object"], "chat.completion");
+    assert_eq!(payload["choices"][0]["message"]["role"], "assistant");
+    assert!(payload["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap()
+        .contains("summary"));
+}
+
+#[tokio::test]
+async fn openai_chat_completions_rejects_streaming() {
+    let app = app_for_tests(AppConfig::default());
+    let (status, payload) = json_request(
+        app,
+        "POST",
+        "/v1/chat/completions",
+        Some(
+            r#"{"stream":true,"messages":[{"role":"user","content":"read docs"}]}"#.to_string(),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(payload["error"]["type"], "invalid_request_error");
+}
+
 #[test]
 fn session_status_serializes_snake_case() {
     let status = SessionStatus::PendingApproval;
