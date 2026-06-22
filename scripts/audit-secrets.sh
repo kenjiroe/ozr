@@ -20,10 +20,10 @@ while IFS= read -r path; do
       fail=1
       ;;
   esac
-done < <(git ls-files | rg '^\.env' || true)
+done < <(git ls-files | grep -E '^\.env' || true)
 
 echo "==> Checking git history for private .env commits"
-if git log --all --name-only --pretty=format: -- .env .env.local 2>/dev/null | rg -q '.'; then
+if git log --all --name-only --pretty=format: -- .env .env.local 2>/dev/null | grep -q .; then
   echo "  FAIL .env or .env.local found in git history"
   fail=1
 else
@@ -32,14 +32,14 @@ fi
 
 echo "==> Pattern scan across all commits"
 patterns=(
-  'sk-[a-zA-Z0-9]{16,}'
-  'ghp_[a-zA-Z0-9]{20,}'
-  'AIzaSy[a-zA-Z0-9_-]{20,}'
-  'xox[baprs]-[a-zA-Z0-9-]{10,}'
-  '/Users/[a-zA-Z]+/'
+  'sk-[a-zA-Z0-9]\{16,\}'
+  'ghp_[a-zA-Z0-9]\{20,\}'
+  'AIzaSy[a-zA-Z0-9_-]\{20,\}'
+  'xox[baprs]-[a-zA-Z0-9-]\{10,\}'
+  '/Users/[a-zA-Z]\+/'
 )
 for pattern in "${patterns[@]}"; do
-  if git log --all -p 2>/dev/null | rg -q "$pattern"; then
+  if git log --all -p 2>/dev/null | grep -E -q "$pattern"; then
     echo "  FAIL matched pattern: $pattern"
     fail=1
   fi
@@ -55,7 +55,7 @@ elif command -v trufflehog >/dev/null 2>&1; then
   echo "==> trufflehog git"
   trufflehog git "file://$ROOT" --since-commit HEAD~500
 else
-  echo "==> Optional: install gitleaks or trufflehog for deeper scans"
+  echo "  Optional: install gitleaks or trufflehog for deeper scans"
 fi
 
 if [[ "$fail" -ne 0 ]]; then
