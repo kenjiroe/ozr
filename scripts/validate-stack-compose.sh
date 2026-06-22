@@ -32,6 +32,17 @@ if [[ ! -f "$VENDOR/.env" ]]; then
   echo "created $VENDOR/.env from .env.example"
 fi
 
+# Compose loads --env-file after the shell environment; pin absolute paths so
+# include: ${SANDBOXD_DIR}/docker-compose.yml resolves on Linux CI runners.
+COMPOSE_ENV="$(mktemp)"
+trap 'rm -f "$COMPOSE_ENV"' EXIT
+cp "$ROOT/$ENV_FILE" "$COMPOSE_ENV"
+{
+  echo "SANDBOXD_DIR=$VENDOR"
+  echo "SANDBOXD_DATA_HOST_ABS=$SANDBOXD_DATA_HOST_ABS"
+  echo "SANDBOXD_LOG_DIR=$SANDBOXD_LOG_DIR"
+} >> "$COMPOSE_ENV"
+
 docker compose version
-docker compose --env-file "$ENV_FILE" -f docker-compose.stack.yml config >/dev/null
+docker compose --env-file "$COMPOSE_ENV" -f docker-compose.stack.yml config >/dev/null
 echo "stack compose config OK"
