@@ -5,7 +5,7 @@ use crate::core::guardrail::Guardrail;
 use crate::core::llm_adapter::LlmProvider;
 use crate::core::mcp_client::McpClient;
 use crate::core::memory::MemoryStore;
-use crate::core::policy::{PlannedAction, PolicyEngine, RiskTier};
+use crate::core::policy::{ActionKind, PlannedAction, PolicyEngine, RiskTier};
 use crate::core::sandbox_executor::SandboxExecutor;
 use crate::core::session_recovery::{begin_session, complete_session, fail_session, touch_session};
 use std::error::Error;
@@ -156,6 +156,16 @@ impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
                         )?;
                     }
                 }
+            }
+
+            if self.policy.require_sandboxd
+                && action.kind != ActionKind::Read
+                && self.executor.uses_host_execution()
+            {
+                return self.fail_run(
+                    &run_id,
+                    "policy requires sandboxd executor for Shell/Write/Network actions",
+                );
             }
 
             let tool_result = self

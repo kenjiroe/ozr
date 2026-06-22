@@ -113,6 +113,7 @@ Key flags:
 | `OZR_LLM_BACKEND` | `mock` | LLM provider |
 | `OZR_MCP_BACKEND` | `mock` | MCP transport |
 | `OZR_APPROVAL_MODE` | `prompt` | CLI approval (`auto` / `deny` / `prompt`) |
+| `OZR_POLICY_PACK` | `balanced` | `production` requires sandboxd for Shell/Write/Network |
 | `OZR_FEATURE_SANDBOXD_EXECUTOR` | `false` | Route risky actions to sandboxd |
 | `OZR_API_BIND` | `127.0.0.1:8080` | HTTP API listen address |
 

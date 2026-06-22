@@ -13,6 +13,8 @@ use std::path::Path;
 
 #[async_trait]
 pub trait SandboxExecutor: Send + Sync {
+    fn uses_host_execution(&self) -> bool;
+
     async fn execute(
         &self,
         action: &PlannedAction,
@@ -26,6 +28,10 @@ pub struct HostExecutor;
 
 #[async_trait]
 impl SandboxExecutor for HostExecutor {
+    fn uses_host_execution(&self) -> bool {
+        true
+    }
+
     async fn execute(
         &self,
         action: &PlannedAction,
@@ -101,6 +107,14 @@ impl RuntimeExecutor {
 
 #[async_trait]
 impl SandboxExecutor for RuntimeExecutor {
+    fn uses_host_execution(&self) -> bool {
+        match self {
+            Self::Host(executor) => executor.uses_host_execution(),
+            Self::SandboxdStub(executor) => executor.uses_host_execution(),
+            Self::SandboxdApi(executor) => executor.uses_host_execution(),
+        }
+    }
+
     async fn execute(
         &self,
         action: &PlannedAction,
@@ -128,6 +142,10 @@ impl SandboxdApiExecutor {
 
 #[async_trait]
 impl SandboxExecutor for SandboxdExecutor {
+    fn uses_host_execution(&self) -> bool {
+        true
+    }
+
     async fn execute(
         &self,
         action: &PlannedAction,
@@ -146,6 +164,10 @@ impl SandboxExecutor for SandboxdExecutor {
 
 #[async_trait]
 impl SandboxExecutor for SandboxdApiExecutor {
+    fn uses_host_execution(&self) -> bool {
+        false
+    }
+
     async fn execute(
         &self,
         action: &PlannedAction,

@@ -57,6 +57,8 @@ pub enum Decision {
 pub struct PolicyEngine {
     pub allow_shell_auto: bool,
     pub ponytail_mode: PonytailMode,
+    /// When true, Write/Shell/Network must route through a wired sandboxd executor.
+    pub require_sandboxd: bool,
 }
 
 impl Default for PolicyEngine {
@@ -64,6 +66,7 @@ impl Default for PolicyEngine {
         Self {
             allow_shell_auto: false,
             ponytail_mode: PonytailMode::Off,
+            require_sandboxd: false,
         }
     }
 }

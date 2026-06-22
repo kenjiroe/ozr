@@ -13,7 +13,7 @@ use crate::core::memory_orchestrator::{
     LayeredMemoryOrchestrator, MemoryOrchestrator, RecallBudget,
 };
 use crate::core::policy::PolicyEngine;
-use crate::core::policy_pack::{BudgetPreset, PolicyPack};
+use crate::core::policy_pack::PolicyPack;
 use crate::core::replay::generate_replay_report;
 use crate::core::sandbox_executor::{RuntimeExecutor, SandboxdSettings};
 use crate::core::sandboxd_policy::{
@@ -28,7 +28,6 @@ use crate::core::vector_backend::VectorBackend;
 use std::env;
 use std::error::Error;
 use std::fs;
-use std::time::Duration;
 
 type CliResult<T> = Result<T, Box<dyn Error>>;
 
@@ -91,6 +90,7 @@ fn init_workspace() -> CliResult<()> {
 
 async fn serve_api() -> CliResult<()> {
     let cfg = AppConfig::from_env();
+    PolicyPack::prepare_runtime(&cfg).map_err(|err| -> Box<dyn Error> { err.into() })?;
     let memory = MemoryStore::new(".ozr");
     memory.ensure_layout()?;
     println!("ozr api listening on http://{}", cfg.api_bind);
@@ -112,19 +112,10 @@ async fn run_prompt(prompt: &str) -> CliResult<()> {
     }
 
     let mut audit = AuditLogger::new(".ozr/audit/runs.log")?;
-    let mut policy = PolicyEngine::default();
-    policy.ponytail_mode = cfg.ponytail_mode;
-
-    let policy_pack = PolicyPack::from_env(&cfg.policy_pack);
-    let mut budget_preset = BudgetPreset {
-        max_tokens: cfg.budget_max_tokens,
-        max_iterations: cfg.budget_max_iterations,
-        max_run_seconds: cfg.budget_max_run_seconds,
-    };
-    policy_pack.apply(&mut policy, &cfg.approval_mode, &mut budget_preset);
+    let (policy, budget) = PolicyPack::prepare_runtime(&cfg)?;
     let _ = audit.append(
         "bootstrap",
-        &format!("policy_pack:{}", policy_pack.as_str()),
+        &format!("policy_pack:{}", PolicyPack::from_env(&cfg.policy_pack).as_str()),
     );
 
     if cfg.feature_spec_kitty_workflow {
@@ -143,18 +134,13 @@ async fn run_prompt(prompt: &str) -> CliResult<()> {
     let mut enriched_prompt = prompt.to_string();
     if cfg.feature_memory_layered {
         let orchestrator = build_memory_orchestrator(&cfg)?;
-        let budget = memory_recall_budget(&cfg);
-        let bundle = orchestrator.recall(prompt, budget)?;
+        let recall_budget = memory_recall_budget(&cfg);
+        let bundle = orchestrator.recall(prompt, recall_budget)?;
         let _ = orchestrator.ingest_event(&format!("prompt={}", prompt));
         let memory_hits = orchestrator.format_bundle(&bundle);
         enriched_prompt = format!("{}\n\nMemory context:\n{}", prompt, memory_hits);
     }
 
-    let budget = BudgetGuard::new(
-        budget_preset.max_tokens,
-        budget_preset.max_iterations,
-        Duration::from_secs(budget_preset.max_run_seconds),
-    );
     let llm = build_llm_provider(&cfg);
     let mcp = build_mcp_client(&cfg);
     run_with_provider(

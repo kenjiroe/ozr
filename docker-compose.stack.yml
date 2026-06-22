@@ -50,6 +50,7 @@ services:
       OZR_FEATURE_SANDBOXD_EXECUTOR: "true"
       OZR_SANDBOXD_API_BASE: http://sandboxd:9000
       OZR_AUTO_WIRE_SANDBOXD: "true"
+      OZR_POLICY_PACK: production
       OZR_QDRANT_URL: http://qdrant:6333
       OZR_QDRANT_COLLECTION: ${OZR_QDRANT_COLLECTION:-ozr_memory}
       OZR_FEATURE_VECTOR_BACKEND: ${OZR_FEATURE_VECTOR_BACKEND:-qdrant}
