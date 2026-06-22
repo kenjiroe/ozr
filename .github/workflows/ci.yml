@@ -39,6 +39,9 @@ jobs:
         run: cargo test --test api
       - name: cargo test (sandboxd api mock)
         run: cargo test --test sandboxd_api
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v2.29.7
       - name: docker build ozr image
         run: docker build -t ozr:ci .
       - name: validate docker compose stack

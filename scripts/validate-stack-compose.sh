@@ -13,10 +13,11 @@ set -a
 source "$ROOT/$ENV_FILE"
 set +a
 
-VENDOR="${SANDBOXD_DIR:-$ROOT/vendor/sandboxd}"
+VENDOR="${SANDBOXD_DIR:-vendor/sandboxd}"
 if [[ "$VENDOR" != /* ]]; then
   VENDOR="$ROOT/$VENDOR"
 fi
+VENDOR="$(cd "$(dirname "$VENDOR")" && pwd)/$(basename "$VENDOR")"
 export SANDBOXD_DIR="$VENDOR"
 export SANDBOXD_DATA_HOST_ABS="$(stack_data_host_abs "$ROOT")"
 export SANDBOXD_LOG_DIR="$SANDBOXD_DATA_HOST_ABS/log"
@@ -24,7 +25,16 @@ export SANDBOXD_LOG_DIR="$SANDBOXD_DATA_HOST_ABS/log"
 if [[ ! -f "$VENDOR/docker-compose.yml" ]]; then
   echo "Cloning sandboxd into $VENDOR ..."
   mkdir -p "$(dirname "$VENDOR")"
-  git clone --depth 1 https://github.com/tastyeffectco/sandboxd.git "$VENDOR"
+  for attempt in 1 2 3; do
+    if git clone --depth 1 https://github.com/tastyeffectco/sandboxd.git "$VENDOR"; then
+      break
+    fi
+    if [[ "$attempt" -eq 3 ]]; then
+      echo "failed to clone sandboxd after 3 attempts" >&2
+      exit 1
+    fi
+    sleep 3
+  done
 fi
 
 if [[ ! -f "$VENDOR/.env" ]]; then
@@ -40,9 +50,14 @@ cp "$ROOT/$ENV_FILE" "$COMPOSE_ENV"
 {
   echo "SANDBOXD_DIR=$VENDOR"
   echo "SANDBOXD_DATA_HOST_ABS=$SANDBOXD_DATA_HOST_ABS"
+  echo "SANDBOXD_DATA_DIR=$SANDBOXD_DATA_HOST_ABS"
   echo "SANDBOXD_LOG_DIR=$SANDBOXD_LOG_DIR"
 } >> "$COMPOSE_ENV"
 
 docker compose version
-docker compose --env-file "$COMPOSE_ENV" -f docker-compose.stack.yml config >/dev/null
+if ! docker compose --env-file "$COMPOSE_ENV" -f docker-compose.stack.yml config >/tmp/ozr-compose-config.out 2>/tmp/ozr-compose-config.err; then
+  echo "docker compose config failed:" >&2
+  cat /tmp/ozr-compose-config.err >&2
+  exit 1
+fi
 echo "stack compose config OK"
