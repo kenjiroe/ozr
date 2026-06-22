@@ -4,7 +4,7 @@ Thank you for helping improve ozr. This project is security-first: changes that 
 
 ## Prerequisites
 
-- Rust **1.85+** (see `ui/rust-toolchain.toml` for the GUI shell)
+- Rust **1.85+** (see `rust-toolchain.toml`)
 - Node.js **22+** (GUI and MCP filesystem test fixture only)
 
 ## Setup
@@ -29,8 +29,9 @@ Run these from the repository root:
 
 ```bash
 cargo fmt --all
-cargo clippy --all-targets
+cargo clippy --all-targets -- -D warnings
 cargo test
+./scripts/audit-secrets.sh
 ```
 
 For MCP integration tests:
@@ -55,10 +56,11 @@ OZR_RUN_INTEGRATION=1 cargo test --test integration_live -- --ignored
 
 ## Architecture references
 
-- [ozr.md](ozr.md) — product blueprint (Thai/English)
+- [docs/architecture.md](docs/architecture.md) — system overview (English)
+- [ozr.md](ozr.md) — product blueprint
 - [INTEGRATION_SPEC.md](INTEGRATION_SPEC.md) — integration phases and contracts
 - [docs/sandboxd-production.md](docs/sandboxd-production.md) — sandboxd deployment notes
 
 ## Code of conduct
 
-Be respectful and constructive. Security reports with reproduction steps are especially welcome.
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Security reports with reproduction steps are especially welcome — see [SECURITY.md](SECURITY.md).

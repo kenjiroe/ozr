@@ -16,6 +16,8 @@ jobs:
           components: rustfmt, clippy
       - name: cargo fmt
         run: cargo fmt --all -- --check
+      - name: secret audit
+        run: ./scripts/audit-secrets.sh
       - name: cargo clippy
         run: cargo clippy --all-targets -- -D warnings
       - name: cargo check

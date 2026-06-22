@@ -9,8 +9,10 @@ ozr orchestrates LLM planning, MCP tool execution, human approval, and audit log
 - **Security-first guardrails** — unknown tools escalate to high-risk `Shell`; medium/high actions block on human approval.
 - **Non-blocking runtime** — agent runs spawn on Tokio; API sessions poll independently (approval + concurrent `/v1/run` supported).
 - **Provider-agnostic** — mock, OpenAI-compatible, Anthropic, Gemini, and Ollama LLM backends; MCP via mock or stdio.
-Optional isolated execution via [sandboxd](docs/sandboxd-local.md) (local setup guide).
+  Optional isolated execution via [sandboxd](docs/sandboxd-local.md) (local setup guide).
 - **Audit-ready** — run logs, session checkpoints, replay reports under `.ozr/`.
+
+See [docs/architecture.md](docs/architecture.md) for the system blueprint.
 
 ## Quick start
 
@@ -44,12 +46,16 @@ curl -s http://127.0.0.1:8080/v1/run \
   -d '{"prompt":"read docs"}'
 ```
 
-**OpenAI-compatible shim:**
+**OpenAI-compatible shim** (JSON or SSE streaming):
 
 ```bash
 curl -s http://127.0.0.1:8080/v1/chat/completions \
   -H 'content-type: application/json' \
   -d '{"model":"ozr","messages":[{"role":"user","content":"read docs"}]}'
+
+curl -N http://127.0.0.1:8080/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -d '{"stream":true,"messages":[{"role":"user","content":"read docs"}]}'
 ```
 
 Endpoints: `POST /v1/run` · `GET /v1/session/{id}` · `POST /v1/session/{id}/approve` · `POST /v1/chat/completions`
@@ -123,9 +129,10 @@ Run `ozr config` to print the effective configuration (secrets shown as set/unse
 
 ```text
 src/          Rust core — agent loop, policy, API, CLI
-ui/           Tauri + React desktop GUI (Phase 4C alpha)
+ui/           Tauri + React desktop GUI (alpha)
 tests/        Integration and E2E tests
-docs/         Production guides
+docs/         Architecture and deployment guides
+scripts/      Docker stack, sandboxd wiring, secret audit
 ozr.md        Product blueprint
 INTEGRATION_SPEC.md
 ```
@@ -135,14 +142,15 @@ INTEGRATION_SPEC.md
 ```bash
 cargo test
 cargo fmt --all -- --check
-cargo clippy --all-targets
+cargo clippy --all-targets -- -D warnings
+./scripts/audit-secrets.sh
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGELOG.md](CHANGELOG.md)
 
 ## Status
 
-**v0.1.0-alpha** — core async engine, Axum API, OpenAI shim, approval gate, GUI alpha, sandboxd executor (host + Docker deploy). Streaming shim and production hardening are ongoing.
+**v0.1.0-alpha.1** — async core, Axum API, OpenAI shim (JSON + SSE stream shim), approval gate, production policy pack, Docker stack, sandboxd executor, GUI alpha. True token streaming from LLM providers is not implemented yet.
 
 ## License
 
