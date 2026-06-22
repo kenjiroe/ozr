@@ -6,7 +6,7 @@ use axum::{
 use ozr::core::config::AppConfig;
 use ozr::core::mcp_client::MockMcpClient;
 use ozr::core::policy::{ActionKind, PlannedAction};
-use ozr::core::sandbox_executor::{SandboxdApiExecutor, SandboxdSettings, SandboxExecutor};
+use ozr::core::sandbox_executor::{SandboxExecutor, SandboxdApiExecutor, SandboxdSettings};
 use serde_json::json;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -207,8 +207,7 @@ fn integration_fixture_reaches_mock_sandboxd() {
             ..Default::default()
         };
 
-        let report =
-            ozr::core::integration_fixtures::run_sandboxd_fixture(&cfg).expect("fixture");
+        let report = ozr::core::integration_fixtures::run_sandboxd_fixture(&cfg).expect("fixture");
         assert_eq!(report.name, "sandboxd");
         assert!(report.detail.contains("ozr-test-sandbox"));
     });
@@ -279,9 +278,7 @@ async fn poll_session_until(
             );
         }
     }
-    panic!(
-        "session {session_id} did not reach {want_status}; last={last}"
-    );
+    panic!("session {session_id} did not reach {want_status}; last={last}");
 }
 
 #[tokio::test]

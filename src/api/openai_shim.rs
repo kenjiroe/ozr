@@ -119,7 +119,9 @@ pub async fn chat_completions(
     }
 
     if body.stream {
-        return Ok(stream_chat_completion(state, body, prompt).await.into_response());
+        return Ok(stream_chat_completion(state, body, prompt)
+            .await
+            .into_response());
     }
 
     Ok(Json(
@@ -139,18 +141,14 @@ async fn complete_chat_completion(
     prompt: String,
 ) -> Result<ChatCompletionResponse, String> {
     let session_id = start_agent_session(&state, prompt).await;
-    let view = wait_for_session_terminal(&state.sessions, &session_id, DEFAULT_COMPLETION_TIMEOUT)
-        .await?;
+    let view =
+        wait_for_session_terminal(&state.sessions, &session_id, DEFAULT_COMPLETION_TIMEOUT).await?;
 
     let content = view
         .result
         .ok_or_else(|| "completed session missing result".to_string())?;
 
-    Ok(build_completion_response(
-        &body.model,
-        content,
-        &session_id,
-    ))
+    Ok(build_completion_response(&body.model, content, &session_id))
 }
 
 async fn stream_chat_completion(
@@ -184,10 +182,7 @@ async fn stream_chat_completion(
 
 async fn start_agent_session(state: &AppState, prompt: String) -> String {
     let session_id = SessionStore::new_session_id();
-    state
-        .sessions
-        .create(&session_id, prompt.clone())
-        .await;
+    state.sessions.create(&session_id, prompt.clone()).await;
 
     let cfg = state.cfg.clone();
     let store = state.sessions.clone();
@@ -305,9 +300,9 @@ fn stream_chunk(
             finish_reason,
         }],
     };
-    Event::default().json_data(chunk).unwrap_or_else(|err| {
-        Event::default().data(format!("{{\"error\":\"{}\"}}", err))
-    })
+    Event::default()
+        .json_data(chunk)
+        .unwrap_or_else(|err| Event::default().data(format!("{{\"error\":\"{}\"}}", err)))
 }
 
 fn chunk_content(text: &str, max_chars: usize) -> Vec<String> {

@@ -115,7 +115,10 @@ async fn run_prompt(prompt: &str) -> CliResult<()> {
     let (policy, budget) = PolicyPack::prepare_runtime(&cfg)?;
     let _ = audit.append(
         "bootstrap",
-        &format!("policy_pack:{}", PolicyPack::from_env(&cfg.policy_pack).as_str()),
+        &format!(
+            "policy_pack:{}",
+            PolicyPack::from_env(&cfg.policy_pack).as_str()
+        ),
     );
 
     if cfg.feature_spec_kitty_workflow {

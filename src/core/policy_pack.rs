@@ -88,7 +88,10 @@ impl PolicyPack {
     }
 }
 
-pub fn validate_sandboxd_requirements(cfg: &AppConfig, policy: &PolicyEngine) -> Result<(), String> {
+pub fn validate_sandboxd_requirements(
+    cfg: &AppConfig,
+    policy: &PolicyEngine,
+) -> Result<(), String> {
     if !policy.require_sandboxd {
         return Ok(());
     }
