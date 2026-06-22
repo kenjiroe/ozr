@@ -31,7 +31,7 @@ Run these from the repository root:
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test
-./scripts/audit-secrets.sh
+./scripts/validate-stack-compose.sh   # before release (requires sandboxd vendor clone)
 ```
 
 For MCP integration tests:

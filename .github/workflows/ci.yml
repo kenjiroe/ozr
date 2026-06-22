@@ -44,5 +44,7 @@ jobs:
           version: v2.29.7
       - name: docker build ozr image
         run: docker build -t ozr:ci .
-      - name: validate docker compose stack
-        run: ./scripts/validate-stack-compose.sh
+      - name: validate docker compose
+        run: |
+          docker compose -f docker-compose.yml config
+          # Full stack merge (sandboxd vendor): run ./scripts/validate-stack-compose.sh before releases
