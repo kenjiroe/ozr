@@ -146,7 +146,7 @@ impl QdrantVectorBackend {
                     },
                     content,
                     trust_score: trust_for_source("inferred"),
-                    relevance: score.max(0.0).min(1.0),
+                    relevance: score.clamp(0.0, 1.0),
                 })
                 .collect());
         }

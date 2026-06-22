@@ -28,6 +28,7 @@ pub async fn run_agent_once<A: ApprovalGate>(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_agent_with_deps(
     cfg: &AppConfig,
     prompt: &str,

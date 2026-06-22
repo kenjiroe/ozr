@@ -27,6 +27,7 @@ pub struct AgentLoop<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: Ap
 impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
     AgentLoop<'a, L, M, E, A>
 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         policy: PolicyEngine,
         budget: BudgetGuard,
@@ -201,6 +202,30 @@ impl<'a, L: LlmProvider, M: McpClient, E: SandboxExecutor, A: ApprovalGate>
     }
 }
 
+fn extract_sandboxd_task_id(result: &str) -> Option<String> {
+    result.lines().find_map(|line| {
+        line.strip_prefix("sandboxd_task=")
+            .map(|task_id| task_id.trim().to_string())
+            .filter(|task_id| !task_id.is_empty())
+    })
+}
+
+fn generate_run_id() -> Result<String, String> {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_millis();
+    Ok(format!("run-{}", ts))
+}
+
+fn tier_label(tier: RiskTier) -> &'static str {
+    match tier {
+        RiskTier::Low => "low",
+        RiskTier::Medium => "medium",
+        RiskTier::High => "high",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -257,10 +282,12 @@ mod tests {
 
     #[tokio::test]
     async fn transition_denied_plan_stops_before_execute() {
-        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
         let checkpoint = dir.path().join("checkpoint.json");
-        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
+        {
+            let _guard = crate::test_support::env_test_lock();
+            std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
+        }
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -268,23 +295,28 @@ mod tests {
             PolicyEngine::default(),
             BudgetGuard::new(500, 3, Duration::from_secs(5)),
             WritePlanLlm,
-            MockMcpClient::default(),
-            HostExecutor::default(),
+            MockMcpClient,
+            HostExecutor,
             DenyGate,
             memory,
             &mut audit,
         );
         let result = engine.run_once("deny write").await;
         assert!(result.is_err());
-        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
+        {
+            let _guard = crate::test_support::env_test_lock();
+            std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
+        }
     }
 
     #[tokio::test]
     async fn transition_medium_risk_hits_approval_gate() {
-        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
         let checkpoint = dir.path().join("checkpoint.json");
-        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
+        {
+            let _guard = crate::test_support::env_test_lock();
+            std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
+        }
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -292,38 +324,17 @@ mod tests {
             PolicyEngine::default(),
             BudgetGuard::new(500, 3, Duration::from_secs(5)),
             WritePlanLlm,
-            MockMcpClient::default(),
-            HostExecutor::default(),
+            MockMcpClient,
+            HostExecutor,
             CliApprovalGate::new(ApprovalMode::AutoDeny),
             memory,
             &mut audit,
         );
         let result = engine.run_once("write file").await;
         assert!(result.is_err());
-        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
-    }
-}
-
-fn extract_sandboxd_task_id(result: &str) -> Option<String> {
-    result.lines().find_map(|line| {
-        line.strip_prefix("sandboxd_task=")
-            .map(|task_id| task_id.trim().to_string())
-            .filter(|task_id| !task_id.is_empty())
-    })
-}
-
-fn generate_run_id() -> Result<String, String> {
-    let ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_millis();
-    Ok(format!("run-{}", ts))
-}
-
-fn tier_label(tier: RiskTier) -> &'static str {
-    match tier {
-        RiskTier::Low => "low",
-        RiskTier::Medium => "medium",
-        RiskTier::High => "high",
+        {
+            let _guard = crate::test_support::env_test_lock();
+            std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
+        }
     }
 }

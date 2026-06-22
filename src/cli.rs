@@ -156,6 +156,7 @@ async fn run_prompt(prompt: &str) -> CliResult<()> {
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_with_provider(
     cfg: AppConfig,
     enriched_prompt: String,
@@ -329,7 +330,7 @@ fn run_workflow(request: &str) -> CliResult<()> {
         let workflow = SpecKittyWorkflow::new(cfg.spec_kitty_command);
         workflow.dispatch(request)
     } else {
-        let workflow = NoopWorkflow::default();
+        let workflow = NoopWorkflow;
         workflow.dispatch(request)
     }?;
 

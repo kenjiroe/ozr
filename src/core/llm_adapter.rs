@@ -60,7 +60,7 @@ pub fn build_llm_provider(cfg: &AppConfig) -> Box<dyn LlmProvider> {
             model: cfg.llm_model.clone(),
             provider: LlmWireFormat::Ollama,
         }),
-        _ => Box::new(MockLlmProvider::default()),
+        _ => Box::new(MockLlmProvider),
     }
 }
 
@@ -174,12 +174,10 @@ impl HttpLlmProvider {
         }
         let body = String::from_utf8_lossy(&output.stdout).trim().to_string();
         match self.provider {
-            LlmWireFormat::OpenAiCompatible => {
-                parse_openai_chat_content(&body).or_else(|_| Ok(body))
-            }
-            LlmWireFormat::Anthropic => parse_anthropic_content(&body).or_else(|_| Ok(body)),
-            LlmWireFormat::Gemini => parse_gemini_content(&body).or_else(|_| Ok(body)),
-            LlmWireFormat::Ollama => parse_ollama_content(&body).or_else(|_| Ok(body)),
+            LlmWireFormat::OpenAiCompatible => parse_openai_chat_content(&body).or(Ok(body)),
+            LlmWireFormat::Anthropic => parse_anthropic_content(&body).or(Ok(body)),
+            LlmWireFormat::Gemini => parse_gemini_content(&body).or(Ok(body)),
+            LlmWireFormat::Ollama => parse_ollama_content(&body).or(Ok(body)),
         }
     }
 
@@ -303,7 +301,7 @@ mod tests {
 
     #[tokio::test]
     async fn mock_provider_syncs_write_action_kind_from_catalog() {
-        let provider = MockLlmProvider::default();
+        let provider = MockLlmProvider;
         let catalog = vec![
             build_tool_definition("write_file", "write a file"),
             build_tool_definition("read_file", "read a file"),
@@ -315,7 +313,7 @@ mod tests {
 
     #[tokio::test]
     async fn mock_provider_uses_catalog_when_read_file_missing() {
-        let provider = MockLlmProvider::default();
+        let provider = MockLlmProvider;
         let catalog = vec![build_tool_definition("write_file", "write a file")];
         let plan = provider.propose_plan("write config", &catalog).await;
         assert_eq!(plan.tool, "write_file");

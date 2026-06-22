@@ -66,6 +66,7 @@ impl ApprovalGate for StubApprovalGate {
     }
 }
 
+#[allow(clippy::await_holding_lock)]
 async fn run_case(
     llm: impl LlmProvider,
     approver: impl ApprovalGate,
@@ -79,8 +80,8 @@ async fn run_case(
     let memory = MemoryStore::new("/tmp/ozr-smoke-unused");
     let mut audit = AuditLogger::new(audit_path)?;
     let policy = PolicyEngine::default();
-    let mcp = MockMcpClient::default();
-    let executor = HostExecutor::default();
+    let mcp = MockMcpClient;
+    let executor = HostExecutor;
     let mut loop_engine = AgentLoop::new(
         policy, budget, llm, mcp, executor, approver, memory, &mut audit,
     );
@@ -95,7 +96,7 @@ async fn smoke_01_low_risk_read_completes() {
     let audit = dir.path().join("runs.log");
     let checkpoint = dir.path().join("checkpoint.json");
     let result = run_case(
-        MockLlmProvider::default(),
+        MockLlmProvider,
         CliApprovalGate::new(ApprovalMode::Prompt),
         BudgetGuard::new(2_000, 5, Duration::from_secs(5)),
         "read docs",
@@ -219,8 +220,10 @@ async fn smoke_07_skip_returns_without_error() {
 
 #[tokio::test]
 async fn smoke_08_ultra_ponytail_escalates_network() {
-    let mut engine = PolicyEngine::default();
-    engine.ponytail_mode = PonytailMode::Ultra;
+    let engine = PolicyEngine {
+        ponytail_mode: PonytailMode::Ultra,
+        ..Default::default()
+    };
     let guardrail = Guardrail::new(&engine);
     let gate = guardrail.check_plan(&PlannedAction {
         tool: "fetch_url".to_string(),
@@ -237,7 +240,7 @@ async fn smoke_09_session_checkpoint_completes() {
     let checkpoint = dir.path().join("checkpoint.json");
     std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
     run_case(
-        MockLlmProvider::default(),
+        MockLlmProvider,
         CliApprovalGate::new(ApprovalMode::AutoApprove),
         BudgetGuard::new(2_000, 5, Duration::from_secs(5)),
         "checkpoint test",
@@ -260,7 +263,7 @@ async fn smoke_10_replay_detects_completed_run() {
     let audit = dir.path().join("runs.log");
     let checkpoint = dir.path().join("checkpoint.json");
     run_case(
-        MockLlmProvider::default(),
+        MockLlmProvider,
         CliApprovalGate::new(ApprovalMode::AutoApprove),
         BudgetGuard::new(2_000, 5, Duration::from_secs(5)),
         "replay me",

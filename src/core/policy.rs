@@ -133,8 +133,10 @@ mod tests {
 
     #[test]
     fn ultra_mode_escalates_network_to_high() {
-        let mut engine = PolicyEngine::default();
-        engine.ponytail_mode = PonytailMode::Ultra;
+        let engine = PolicyEngine {
+            ponytail_mode: PonytailMode::Ultra,
+            ..Default::default()
+        };
         let action = PlannedAction {
             tool: "fetch_url".to_string(),
             kind: ActionKind::Network,

@@ -65,8 +65,10 @@ impl PolicyPack {
     }
 
     pub fn prepare_runtime(cfg: &AppConfig) -> Result<(PolicyEngine, BudgetGuard), String> {
-        let mut policy = PolicyEngine::default();
-        policy.ponytail_mode = cfg.ponytail_mode;
+        let mut policy = PolicyEngine {
+            ponytail_mode: cfg.ponytail_mode,
+            ..Default::default()
+        };
 
         let pack = Self::from_env(&cfg.policy_pack);
         let mut budget_preset = BudgetPreset {
@@ -137,8 +139,10 @@ mod tests {
     #[test]
     fn fast_pack_never_auto_approves_shell() {
         let pack = PolicyPack::Fast;
-        let mut policy = PolicyEngine::default();
-        policy.allow_shell_auto = false;
+        let mut policy = PolicyEngine {
+            allow_shell_auto: false,
+            ..Default::default()
+        };
         let mut budget = BudgetPreset {
             max_tokens: 2_000,
             max_iterations: 5,
@@ -161,8 +165,10 @@ mod tests {
         assert!(policy.require_sandboxd);
         assert_eq!(budget.max_run_seconds, 900);
 
-        let mut cfg = AppConfig::default();
-        cfg.policy_pack = "production".to_string();
+        let mut cfg = AppConfig {
+            policy_pack: "production".to_string(),
+            ..Default::default()
+        };
         assert!(PolicyPack::prepare_runtime(&cfg).is_err());
 
         cfg.feature_sandboxd_executor = true;

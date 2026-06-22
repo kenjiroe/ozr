@@ -135,7 +135,7 @@ fn update_status(run_id: &str, status: SessionStatus, reason: &str) -> Result<()
 fn save_checkpoint(checkpoint: &SessionCheckpoint) -> Result<(), String> {
     ensure_parent(&checkpoint_path())?;
     let encoded = serde_json::to_string_pretty(checkpoint).map_err(|e| e.to_string())?;
-    fs::write(&checkpoint_path(), encoded).map_err(|e| e.to_string())
+    fs::write(checkpoint_path(), encoded).map_err(|e| e.to_string())
 }
 
 fn ensure_parent(path: &str) -> Result<(), String> {

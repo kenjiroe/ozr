@@ -122,7 +122,7 @@ async fn sandboxd_api_executor_submits_polls_and_returns_task_id() {
         tool: "run_shell".to_string(),
         kind: ActionKind::Shell,
     };
-    let mcp = MockMcpClient::default();
+    let mcp = MockMcpClient;
     let result = executor
         .execute(&action, "prompt=integration test", &mcp)
         .await
@@ -141,7 +141,7 @@ async fn sandboxd_api_executor_routes_read_via_mcp() {
         tool: "read_file".to_string(),
         kind: ActionKind::Read,
     };
-    let mcp = MockMcpClient::default();
+    let mcp = MockMcpClient;
     let result = executor
         .execute(&action, "path=README.md", &mcp)
         .await
@@ -154,12 +154,14 @@ async fn sandboxd_api_executor_routes_read_via_mcp() {
 #[tokio::test]
 async fn runtime_executor_selects_api_backend_when_sandbox_id_set() {
     let server = MockSandboxdServer::start().await;
-    let mut cfg = AppConfig::default();
-    cfg.feature_sandboxd_executor = true;
-    cfg.sandboxd_api_base = server.base_url().to_string();
-    cfg.sandboxd_sandbox_id = "ozr-test-sandbox".to_string();
-    cfg.sandboxd_poll_interval_ms = 10;
-    cfg.sandboxd_poll_max_interval_ms = 10;
+    let cfg = AppConfig {
+        feature_sandboxd_executor: true,
+        sandboxd_api_base: server.base_url().to_string(),
+        sandboxd_sandbox_id: "ozr-test-sandbox".to_string(),
+        sandboxd_poll_interval_ms: 10,
+        sandboxd_poll_max_interval_ms: 10,
+        ..Default::default()
+    };
 
     let executor = ozr::core::sandbox_executor::RuntimeExecutor::from_config(&cfg);
     let action = PlannedAction {
@@ -167,7 +169,7 @@ async fn runtime_executor_selects_api_backend_when_sandbox_id_set() {
         kind: ActionKind::Shell,
     };
     let result = executor
-        .execute(&action, "prompt=via runtime", &MockMcpClient::default())
+        .execute(&action, "prompt=via runtime", &MockMcpClient)
         .await
         .expect("execute");
 
@@ -176,15 +178,17 @@ async fn runtime_executor_selects_api_backend_when_sandbox_id_set() {
 
 #[tokio::test]
 async fn sandboxd_stub_still_used_without_sandbox_id() {
-    let mut cfg = AppConfig::default();
-    cfg.feature_sandboxd_executor = true;
+    let cfg = AppConfig {
+        feature_sandboxd_executor: true,
+        ..Default::default()
+    };
     let executor = ozr::core::sandbox_executor::RuntimeExecutor::from_config(&cfg);
     let action = PlannedAction {
         tool: "run_shell".to_string(),
         kind: ActionKind::Shell,
     };
     let result = executor
-        .execute(&action, "prompt=stub", &MockMcpClient::default())
+        .execute(&action, "prompt=stub", &MockMcpClient)
         .await
         .expect("execute");
 
@@ -196,10 +200,12 @@ fn integration_fixture_reaches_mock_sandboxd() {
     let rt = tokio::runtime::Runtime::new().expect("runtime");
     rt.block_on(async {
         let server = MockSandboxdServer::start().await;
-        let mut cfg = AppConfig::default();
-        cfg.feature_sandboxd_executor = true;
-        cfg.sandboxd_api_base = server.base_url().to_string();
-        cfg.sandboxd_sandbox_id = "ozr-test-sandbox".to_string();
+        let cfg = AppConfig {
+            feature_sandboxd_executor: true,
+            sandboxd_api_base: server.base_url().to_string(),
+            sandboxd_sandbox_id: "ozr-test-sandbox".to_string(),
+            ..Default::default()
+        };
 
         let report =
             ozr::core::integration_fixtures::run_sandboxd_fixture(&cfg).expect("fixture");
@@ -281,12 +287,14 @@ async fn poll_session_until(
 #[tokio::test]
 async fn api_e2e_routes_shell_to_sandboxd_mock_after_approval() {
     let server = MockSandboxdServer::start().await;
-    let mut cfg = AppConfig::default();
-    cfg.feature_sandboxd_executor = true;
-    cfg.sandboxd_api_base = server.base_url().to_string();
-    cfg.sandboxd_sandbox_id = "ozr-test-sandbox".to_string();
-    cfg.sandboxd_poll_interval_ms = 10;
-    cfg.sandboxd_poll_max_interval_ms = 10;
+    let cfg = AppConfig {
+        feature_sandboxd_executor: true,
+        sandboxd_api_base: server.base_url().to_string(),
+        sandboxd_sandbox_id: "ozr-test-sandbox".to_string(),
+        sandboxd_poll_interval_ms: 10,
+        sandboxd_poll_max_interval_ms: 10,
+        ..Default::default()
+    };
 
     let app = ozr::api::app_for_tests(cfg);
     let (status, payload) = json_request(

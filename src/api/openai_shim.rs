@@ -4,12 +4,16 @@ use crate::api::state::{SessionStatus, SessionStore, SessionView};
 use crate::core::runtime::run_agent_once;
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::response::sse::{Event, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use std::convert::Infallible;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
 const DEFAULT_COMPLETION_TIMEOUT: Duration = Duration::from_secs(120);
+const STREAM_CHUNK_CHARS: usize = 24;
 
 #[derive(Debug, Deserialize)]
 pub struct ChatCompletionRequest {
@@ -63,6 +67,31 @@ pub struct ChatCompletionMessage {
 }
 
 #[derive(Debug, Serialize)]
+struct ChatCompletionChunk {
+    id: String,
+    object: &'static str,
+    created: u64,
+    model: String,
+    choices: Vec<ChatCompletionChunkChoice>,
+}
+
+#[derive(Debug, Serialize)]
+struct ChatCompletionChunkChoice {
+    index: u32,
+    delta: ChatCompletionDelta,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    finish_reason: Option<&'static str>,
+}
+
+#[derive(Debug, Serialize, Default)]
+struct ChatCompletionDelta {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    role: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    content: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct OpenAiErrorResponse {
     pub error: OpenAiErrorBody,
 }
@@ -78,13 +107,7 @@ pub struct OpenAiErrorBody {
 pub async fn chat_completions(
     State(state): State<AppState>,
     Json(body): Json<ChatCompletionRequest>,
-) -> Result<Json<ChatCompletionResponse>, OpenAiShimError> {
-    if body.stream {
-        return Err(OpenAiShimError::bad_request(
-            "streaming is not supported yet; set stream=false",
-        ));
-    }
-
+) -> Result<Response, OpenAiShimError> {
     let prompt = extract_user_prompt(&body.messages).ok_or_else(|| {
         OpenAiShimError::bad_request("messages must include at least one user prompt")
     })?;
@@ -95,8 +118,76 @@ pub async fn chat_completions(
         ));
     }
 
+    if body.stream {
+        return Ok(stream_chat_completion(state, body, prompt).await.into_response());
+    }
+
+    Ok(Json(
+        complete_chat_completion(state, body, prompt)
+            .await
+            .map_err(|message| match message.contains("timed out") {
+                true => OpenAiShimError::gateway_timeout(message),
+                false => OpenAiShimError::internal(message),
+            })?,
+    )
+    .into_response())
+}
+
+async fn complete_chat_completion(
+    state: AppState,
+    body: ChatCompletionRequest,
+    prompt: String,
+) -> Result<ChatCompletionResponse, String> {
+    let session_id = start_agent_session(&state, prompt).await;
+    let view = wait_for_session_terminal(&state.sessions, &session_id, DEFAULT_COMPLETION_TIMEOUT)
+        .await?;
+
+    let content = view
+        .result
+        .ok_or_else(|| "completed session missing result".to_string())?;
+
+    Ok(build_completion_response(
+        &body.model,
+        content,
+        &session_id,
+    ))
+}
+
+async fn stream_chat_completion(
+    state: AppState,
+    body: ChatCompletionRequest,
+    prompt: String,
+) -> Sse<impl tokio_stream::Stream<Item = Result<Event, Infallible>>> {
+    let model = resolve_model(&body.model);
+    let session_id = start_agent_session(&state, prompt).await;
+    let created = unix_timestamp();
+    let completion_id = format!("chatcmpl-{}-{}", session_id, created);
+
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let store = state.sessions.clone();
+    let sid = session_id.clone();
+    tokio::spawn(async move {
+        emit_stream_events(
+            tx,
+            store,
+            sid,
+            completion_id,
+            model,
+            created,
+            DEFAULT_COMPLETION_TIMEOUT,
+        )
+        .await;
+    });
+
+    Sse::new(UnboundedReceiverStream::new(rx))
+}
+
+async fn start_agent_session(state: &AppState, prompt: String) -> String {
     let session_id = SessionStore::new_session_id();
-    state.sessions.create(&session_id, prompt.clone()).await;
+    state
+        .sessions
+        .create(&session_id, prompt.clone())
+        .await;
 
     let cfg = state.cfg.clone();
     let store = state.sessions.clone();
@@ -109,22 +200,126 @@ pub async fn chat_completions(
         }
     });
 
-    let view = wait_for_session_terminal(&state.sessions, &session_id, DEFAULT_COMPLETION_TIMEOUT)
-        .await
-        .map_err(|message| match message.contains("timed out") {
-            true => OpenAiShimError::gateway_timeout(message),
-            false => OpenAiShimError::internal(message),
-        })?;
+    session_id
+}
 
-    let content = view
-        .result
-        .ok_or_else(|| OpenAiShimError::internal("completed session missing result"))?;
+async fn emit_stream_events(
+    tx: tokio::sync::mpsc::UnboundedSender<Result<Event, Infallible>>,
+    store: SessionStore,
+    session_id: String,
+    completion_id: String,
+    model: String,
+    created: u64,
+    timeout: Duration,
+) {
+    let send = |event: Event| {
+        let _ = tx.send(Ok(event));
+    };
 
-    Ok(Json(build_completion_response(
-        &body.model,
-        content,
-        &session_id,
-    )))
+    match wait_for_session_terminal(&store, &session_id, timeout).await {
+        Ok(view) => {
+            let content = view.result.unwrap_or_default();
+            for event in build_stream_events(&completion_id, &model, created, &content) {
+                send(event);
+            }
+        }
+        Err(message) => {
+            send(stream_chunk(
+                &completion_id,
+                &model,
+                created,
+                ChatCompletionDelta {
+                    content: Some(message),
+                    ..ChatCompletionDelta::default()
+                },
+                None,
+            ));
+            send(stream_chunk(
+                &completion_id,
+                &model,
+                created,
+                ChatCompletionDelta::default(),
+                Some("stop"),
+            ));
+        }
+    }
+
+    send(Event::default().data("[DONE]"));
+}
+
+fn build_stream_events(
+    completion_id: &str,
+    model: &str,
+    created: u64,
+    content: &str,
+) -> Vec<Event> {
+    let mut events = vec![stream_chunk(
+        completion_id,
+        model,
+        created,
+        ChatCompletionDelta {
+            role: Some("assistant"),
+            ..ChatCompletionDelta::default()
+        },
+        None,
+    )];
+
+    for piece in chunk_content(content, STREAM_CHUNK_CHARS) {
+        events.push(stream_chunk(
+            completion_id,
+            model,
+            created,
+            ChatCompletionDelta {
+                content: Some(piece),
+                ..ChatCompletionDelta::default()
+            },
+            None,
+        ));
+    }
+
+    events.push(stream_chunk(
+        completion_id,
+        model,
+        created,
+        ChatCompletionDelta::default(),
+        Some("stop"),
+    ));
+    events
+}
+
+fn stream_chunk(
+    completion_id: &str,
+    model: &str,
+    created: u64,
+    delta: ChatCompletionDelta,
+    finish_reason: Option<&'static str>,
+) -> Event {
+    let chunk = ChatCompletionChunk {
+        id: completion_id.to_string(),
+        object: "chat.completion.chunk",
+        created,
+        model: model.to_string(),
+        choices: vec![ChatCompletionChunkChoice {
+            index: 0,
+            delta,
+            finish_reason,
+        }],
+    };
+    Event::default().json_data(chunk).unwrap_or_else(|err| {
+        Event::default().data(format!("{{\"error\":\"{}\"}}", err))
+    })
+}
+
+fn chunk_content(text: &str, max_chars: usize) -> Vec<String> {
+    if text.is_empty() {
+        return vec![String::new()];
+    }
+
+    text.chars()
+        .collect::<Vec<_>>()
+        .chunks(max_chars.max(1))
+        .map(|chunk| chunk.iter().collect())
+        .collect()
 }
 
 fn extract_user_prompt(messages: &[ChatMessage]) -> Option<String> {
@@ -179,15 +374,8 @@ fn build_completion_response(
     content: String,
     session_id: &str,
 ) -> ChatCompletionResponse {
-    let model = if requested_model.trim().is_empty() {
-        "ozr".to_string()
-    } else {
-        requested_model.to_string()
-    };
-    let created = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0);
+    let model = resolve_model(requested_model);
+    let created = unix_timestamp();
 
     ChatCompletionResponse {
         id: format!("chatcmpl-{}-{}", session_id, created),
@@ -203,6 +391,21 @@ fn build_completion_response(
             finish_reason: "stop",
         }],
     }
+}
+
+fn resolve_model(requested_model: &str) -> String {
+    if requested_model.trim().is_empty() {
+        "ozr".to_string()
+    } else {
+        requested_model.to_string()
+    }
+}
+
+fn unix_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
 }
 
 #[derive(Debug)]
@@ -279,5 +482,18 @@ mod tests {
             },
         ];
         assert_eq!(extract_user_prompt(&messages).as_deref(), Some("second"));
+    }
+
+    #[test]
+    fn chunk_content_splits_by_unicode_chars() {
+        let chunks = chunk_content("abcdefgh", 3);
+        assert_eq!(chunks, vec!["abc", "def", "gh"]);
+    }
+
+    #[test]
+    fn build_stream_events_include_role_content_and_stop() {
+        let text = "a".repeat(STREAM_CHUNK_CHARS + 1);
+        let events = build_stream_events("id-1", "ozr", 123, &text);
+        assert_eq!(events.len(), 4);
     }
 }

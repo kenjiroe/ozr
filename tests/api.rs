@@ -167,8 +167,10 @@ async fn test_e2e_approval_flow_shell() {
 
 #[tokio::test]
 async fn test_e2e_sandboxd_stub_routes_shell_after_approval() {
-    let mut cfg = AppConfig::default();
-    cfg.feature_sandboxd_executor = true;
+    let cfg = AppConfig {
+        feature_sandboxd_executor: true,
+        ..Default::default()
+    };
     let app = app_for_tests(cfg);
 
     let (status, payload) = json_request(
@@ -245,17 +247,29 @@ async fn openai_chat_completions_returns_assistant_message() {
 }
 
 #[tokio::test]
-async fn openai_chat_completions_rejects_streaming() {
+async fn openai_chat_completions_streams_sse() {
     let app = app_for_tests(AppConfig::default());
-    let (status, payload) = json_request(
-        app,
-        "POST",
-        "/v1/chat/completions",
-        Some(r#"{"stream":true,"messages":[{"role":"user","content":"read docs"}]}"#.to_string()),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(payload["error"]["type"], "invalid_request_error");
+    let request = Request::builder()
+        .method("POST")
+        .uri("/v1/chat/completions")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            r#"{"stream":true,"messages":[{"role":"user","content":"read docs"}]}"#,
+        ))
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get("content-type").unwrap(),
+        "text/event-stream"
+    );
+    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let text = String::from_utf8(bytes.to_vec()).unwrap();
+    assert!(text.contains("chat.completion.chunk"));
+    assert!(text.contains("[DONE]"));
+    assert!(text.contains("summary"));
 }
 
 #[test]

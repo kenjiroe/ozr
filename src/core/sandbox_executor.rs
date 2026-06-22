@@ -400,8 +400,10 @@ mod tests {
 
     #[test]
     fn runtime_executor_selects_sandboxd_stub_without_sandbox_id() {
-        let mut cfg = AppConfig::default();
-        cfg.feature_sandboxd_executor = true;
+        let cfg = AppConfig {
+            feature_sandboxd_executor: true,
+            ..Default::default()
+        };
         assert!(matches!(
             RuntimeExecutor::from_config(&cfg),
             RuntimeExecutor::SandboxdStub(_)
@@ -410,9 +412,11 @@ mod tests {
 
     #[test]
     fn runtime_executor_selects_sandboxd_api_when_ready() {
-        let mut cfg = AppConfig::default();
-        cfg.feature_sandboxd_executor = true;
-        cfg.sandboxd_sandbox_id = "sb-test".to_string();
+        let cfg = AppConfig {
+            feature_sandboxd_executor: true,
+            sandboxd_sandbox_id: "sb-test".to_string(),
+            ..Default::default()
+        };
         assert!(matches!(
             RuntimeExecutor::from_config(&cfg),
             RuntimeExecutor::SandboxdApi(_)
