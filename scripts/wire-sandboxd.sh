@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Wire ozr to a local sandboxd control plane (default http://127.0.0.1:9090).
+# Wire host-native ozr to sandboxd from the Docker stack (default :9090).
 #
 # Prerequisites:
-#   - sandboxd installed and running (see docs/sandboxd-local.md)
-#   - curl, python3
+#   ./scripts/docker-up-infra.sh   OR   ./scripts/docker-up-stack.sh
 #
 # Usage:
 #   ./scripts/wire-sandboxd.sh
@@ -35,7 +34,8 @@ done
 HEALTH_URL="${API_BASE%/}/healthz"
 if ! curl -sf "$HEALTH_URL" >/dev/null; then
   echo "sandboxd not reachable at $API_BASE ($HEALTH_URL)" >&2
-  echo "Start sandboxd first — see docs/sandboxd-local.md" >&2
+  echo "Start the Docker stack infra first:" >&2
+  echo "  ./scripts/docker-up-infra.sh" >&2
   exit 1
 fi
 
@@ -96,6 +96,8 @@ upsert_env OZR_SANDBOXD_POLL_ATTEMPTS 120
 upsert_env OZR_SANDBOXD_POLL_INTERVAL_MS 2000
 upsert_env OZR_SANDBOXD_POLL_MAX_INTERVAL_MS 10000
 upsert_env OZR_BUDGET_MAX_RUN_SECONDS 900
+upsert_env OZR_QDRANT_URL "http://127.0.0.1:6333"
+upsert_env OZR_FEATURE_VECTOR_BACKEND qdrant
 
 echo ""
 echo "Wrote sandboxd settings to $CONFIG"

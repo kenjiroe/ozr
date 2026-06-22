@@ -151,6 +151,24 @@ impl SessionStore {
         Ok(())
     }
 
+    /// Wait until `submit_approval` fills the resolution slot.
+    /// Uses a double-check around `Notify` to avoid lost wakeups.
+    pub async fn wait_for_pending_resolution(
+        resolution: &Arc<Mutex<Option<ApprovalOutcome>>>,
+        notify: &Arc<Notify>,
+    ) -> ApprovalOutcome {
+        loop {
+            if let Some(outcome) = resolution.lock().await.clone() {
+                return outcome;
+            }
+            let notified = notify.notified();
+            if let Some(outcome) = resolution.lock().await.clone() {
+                return outcome;
+            }
+            notified.await;
+        }
+    }
+
     pub async fn clear_pending(&self, session_id: &str) {
         let mut sessions = self.inner.write().await;
         if let Some(session) = sessions.get_mut(session_id) {
@@ -228,12 +246,7 @@ mod tests {
 
         let store_wait = store.clone();
         let waiter = tokio::spawn(async move {
-            loop {
-                if let Some(outcome) = resolution.lock().await.clone() {
-                    return outcome;
-                }
-                notify.notified().await;
-            }
+            SessionStore::wait_for_pending_resolution(&resolution, &notify).await
         });
 
         store_wait

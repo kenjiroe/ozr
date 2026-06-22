@@ -41,7 +41,12 @@ impl ApprovalGate for ApiApprovalGate {
                 self.store.clear_pending(&self.session_id).await;
                 return Ok(outcome);
             }
-            notify.notified().await;
+            let notified = notify.notified();
+            if let Some(outcome) = resolution.lock().await.clone() {
+                self.store.clear_pending(&self.session_id).await;
+                return Ok(outcome);
+            }
+            notified.await;
         }
     }
 }

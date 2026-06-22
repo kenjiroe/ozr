@@ -1,0 +1,73 @@
+# ozr production stack: API + sandboxd isolation + Qdrant vectors.
+#
+# Full stack:     ./scripts/docker-up-stack.sh
+# Infra only:     ./scripts/docker-up-infra.sh   (then ./scripts/wire-sandboxd.sh for host ozr)
+# Stop:           docker compose --env-file .env.stack.example -f docker-compose.stack.yml down
+
+name: ozr-stack
+
+include:
+  - path: ./docker-compose.yml
+  - path: ${SANDBOXD_DIR:-./vendor/sandboxd}/docker-compose.yml
+    env_file: ./docker/sandboxd.stack.env
+
+services:
+  traefik:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${SANDBOXD_DIR:-./vendor/sandboxd}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${SANDBOXD_DIR:-./vendor/sandboxd}/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log:${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log
+    environment:
+      SANDBOXD_LOG_DIR: ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log
+      SANDBOXD_ACCESS_LOG: ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log/traefik-access.log
+
+  sandboxd:
+    environment:
+      SANDBOXD_DATA_DIR: ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}
+      SANDBOXD_LOG_DIR: ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log
+      SANDBOXD_ACCESS_LOG: ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log/traefik-access.log
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}:${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}
+      - ${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log:${SANDBOXD_DATA_HOST_ABS:-./.docker/sandboxd-data}/log
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - sandboxd_net
+    expose:
+      - "6333"
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+
+  ozr:
+    container_name: ozr-api
+    environment:
+      OZR_FEATURE_SANDBOXD_EXECUTOR: "true"
+      OZR_SANDBOXD_API_BASE: http://sandboxd:9000
+      OZR_AUTO_WIRE_SANDBOXD: "true"
+      OZR_QDRANT_URL: http://qdrant:6333
+      OZR_QDRANT_COLLECTION: ${OZR_QDRANT_COLLECTION:-ozr_memory}
+      OZR_FEATURE_VECTOR_BACKEND: ${OZR_FEATURE_VECTOR_BACKEND:-qdrant}
+      OZR_FEATURE_MEMORY_LAYERED: ${OZR_FEATURE_MEMORY_LAYERED:-false}
+      OZR_VECTOR_EMBEDDINGS: ${OZR_VECTOR_EMBEDDINGS:-false}
+      OZR_BUDGET_MAX_RUN_SECONDS: ${OZR_BUDGET_MAX_RUN_SECONDS:-900}
+    depends_on:
+      sandboxd:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    networks:
+      - default
+      - sandboxd_net
+
+volumes:
+  qdrant-data:
+
+networks:
+  sandboxd_net:
+    name: ozr_stack_net

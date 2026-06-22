@@ -17,6 +17,12 @@ auto_wire="${OZR_AUTO_WIRE_SANDBOXD:-false}"
 
 if [[ "$auto_wire" == "true" ]]; then
   health_url="${sandboxd_base%/}/healthz"
+  for _ in $(seq 1 90); do
+    if curl -sf "$health_url" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 2
+  done
   if curl -sf "$health_url" >/dev/null 2>&1; then
     current_id="$(grep -E '^OZR_SANDBOXD_SANDBOX_ID=' .ozr/config.env 2>/dev/null | cut -d= -f2- || true)"
     if [[ -z "${current_id// /}" ]]; then

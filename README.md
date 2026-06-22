@@ -63,30 +63,34 @@ cd ui && npm install && npm run tauri dev
 
 The GUI spawns `ozr serve` on `http://127.0.0.1:18787` by default. See [ui/README.md](ui/README.md).
 
-### Docker (API server)
+### Docker
 
-Standalone API (mock backends, persistent `.ozr` volume):
+**Standard ports:** ozr API **8080** · sandboxd **9090** · Qdrant **6333** · GUI dev **18787**
+
+**Full stack** (ozr API + sandboxd + Qdrant — recommended for self-hosted):
+
+```bash
+chmod +x scripts/docker-up-stack.sh
+./scripts/docker-up-stack.sh
+```
+
+**Infra only** (host-native `cargo` / Tauri GUI — sandboxd + Qdrant in Docker):
+
+```bash
+chmod +x scripts/docker-up-infra.sh
+./scripts/docker-up-infra.sh
+./scripts/wire-sandboxd.sh
+cd ui && npm run tauri dev
+```
+
+**API only** (mock backends, no sandboxd):
 
 ```bash
 docker compose up -d --build
 curl http://127.0.0.1:8080/health
 ```
 
-With **sandboxd on the host** (port 9090):
-
-```bash
-OZR_FEATURE_SANDBOXD_EXECUTOR=true OZR_AUTO_WIRE_SANDBOXD=true \
-  docker compose up -d --build
-```
-
-**Full stack** (ozr container + sandboxd on shared Docker network):
-
-```bash
-chmod +x scripts/docker-up-full.sh
-./scripts/docker-up-full.sh
-```
-
-See [docs/sandboxd-local.md](docs/sandboxd-local.md) for sandboxd details. Overlay file: `docker-compose.full.yml`.
+Config template: `.env.stack.example` · Details: [docs/sandboxd-local.md](docs/sandboxd-local.md)
 
 ## Configuration
 

@@ -2,48 +2,60 @@
 
 ozr routes **Write / Shell / Network** tool actions through [sandboxd](https://github.com/tastyeffectco/sandboxd) when `OZR_FEATURE_SANDBOXD_EXECUTOR=true` and `OZR_SANDBOXD_SANDBOX_ID` is set.
 
-## 1. Install sandboxd
+**sandboxd runs only via the ozr Docker stack** — there is no separate manual install under `~/Github/sandboxd`.
 
-Requirements: Docker Engine + Compose.
+Workspace data is stored under **`.docker/sandboxd-data/`** (host bind mount) so sandboxd can spawn per-sandbox containers via the Docker socket.
+
+## Standard ports
+
+| Service | Port | Notes |
+|---------|------|--------|
+| ozr API (container) | **8080** | `docker-up-stack.sh` |
+| ozr API (GUI spawn) | **18787** | Tauri dev default |
+| sandboxd | **9090** | shared by stack + host-native ozr |
+| Qdrant | **6333** | vector store |
+| Traefik previews | **8081** | sandbox preview URLs |
+
+## 1. Start Docker infra
+
+**Full stack** (ozr API + sandboxd + Qdrant):
 
 ```bash
-git clone https://github.com/tastyeffectco/sandboxd.git ~/Github/sandboxd
-cd ~/Github/sandboxd
+chmod +x scripts/docker-up-stack.sh
+./scripts/docker-up-stack.sh
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:9090/healthz
 ```
 
-Use a user-writable data directory (avoids `sudo` for `/var/lib/sandboxed`):
+**Infra only** (for host-native CLI / Tauri GUI):
 
 ```bash
-# in sandboxd/.env
-SANDBOXD_DATA_DIR=$HOME/Github/sandboxd/data
-SANDBOXD_LOG_DIR=$HOME/Github/sandboxd/data/log
+chmod +x scripts/docker-up-infra.sh
+./scripts/docker-up-infra.sh
 ```
 
-Then install and start:
+Stop everything:
 
 ```bash
-./install.sh
-curl http://127.0.0.1:9090/healthz   # -> ok
+docker compose --env-file .env.stack.example -f docker-compose.stack.yml down
 ```
 
-If port 80 is taken (Rancher Desktop / Docker Desktop k3s), set `HTTP_PORT=8080` in sandboxd `.env` and restart Traefik.
+## 2. Wire host-native ozr
 
-## 2. Wire ozr
-
-From the ozr repo root (with sandboxd running):
+When running `cargo run`, Tauri GUI, or `./target/debug/ozr serve` on the host (not the ozr container):
 
 ```bash
-chmod +x scripts/wire-sandboxd.sh
 ./scripts/wire-sandboxd.sh
 ```
 
-This creates a sandbox via `POST /sandbox`, then writes:
+This creates a sandbox via `POST /sandbox` and writes into `.ozr/config.env`:
 
 - `OZR_FEATURE_SANDBOXD_EXECUTOR=true`
 - `OZR_SANDBOXD_API_BASE=http://127.0.0.1:9090`
 - `OZR_SANDBOXD_SANDBOX_ID=<ulid>`
+- `OZR_QDRANT_URL=http://127.0.0.1:6333`
 
-into `.ozr/config.env`.
+The ozr **container** auto-wires on first start (`OZR_AUTO_WIRE_SANDBOXD=true`).
 
 ## 3. Verify
 
@@ -64,7 +76,7 @@ High-risk shell still requires human approval (by design):
 
 ozr submits a sandboxd task with agent `opencode` (see `OZR_SANDBOXD_AGENT`). The isolated agent runs inside the sandbox container; results are polled from `GET /v1/sandboxes/{id}/tasks/{taskId}`.
 
-Recommended poll budget for opencode tasks (set automatically by `wire-sandboxd.sh`):
+Recommended poll budget (set by `wire-sandboxd.sh` and the stack):
 
 ```bash
 OZR_SANDBOXD_POLL_ATTEMPTS=120
@@ -73,13 +85,13 @@ OZR_SANDBOXD_POLL_MAX_INTERVAL_MS=10000
 OZR_BUDGET_MAX_RUN_SECONDS=900
 ```
 
-**Tauri GUI:** after wiring, restart `npm run tauri dev` so the spawned `ozr serve` loads `.ozr/config.env` from the repo root (includes sandboxd settings).
+**Tauri GUI:** after wiring, restart `npm run tauri dev` so the spawned `ozr serve` loads `.ozr/config.env` from the repo root.
 
 Live API smoke (approve + wait for sandboxd task):
 
 ```bash
 chmod +x scripts/test-sandboxd-shell-api.sh
-./target/debug/ozr serve   # from repo root
+./target/debug/ozr serve   # from repo root, or use stack on :8080
 ./scripts/test-sandboxd-shell-api.sh
 ```
 
@@ -97,9 +109,3 @@ OZR_SANDBOXD_EVENTS_MAX_TIME_S=5
 |-----------------|---------------|
 | Read | local MCP (not sandboxd) |
 | Write / Shell / Network | `POST /v1/sandboxes/{id}/tasks` → poll status → optional events |
-
-## Stop sandboxd
-
-```bash
-cd ~/Github/sandboxd && docker compose down
-```

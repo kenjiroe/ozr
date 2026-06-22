@@ -1,4 +1,6 @@
 /target
+/vendor
+.docker
 tests/fixtures/mcp-filesystem/node_modules
 ui/node_modules
 ui/dist
