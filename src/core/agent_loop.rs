@@ -281,13 +281,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn transition_denied_plan_stops_before_execute() {
+        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
         let checkpoint = dir.path().join("checkpoint.json");
-        {
-            let _guard = crate::test_support::env_test_lock();
-            std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
-        }
+        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -303,20 +302,16 @@ mod tests {
         );
         let result = engine.run_once("deny write").await;
         assert!(result.is_err());
-        {
-            let _guard = crate::test_support::env_test_lock();
-            std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
-        }
+        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn transition_medium_risk_hits_approval_gate() {
+        let _guard = crate::test_support::env_test_lock();
         let dir = tempfile::tempdir().expect("tempdir");
         let checkpoint = dir.path().join("checkpoint.json");
-        {
-            let _guard = crate::test_support::env_test_lock();
-            std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
-        }
+        std::env::set_var("OZR_SESSION_CHECKPOINT_PATH", checkpoint.to_str().unwrap());
         let audit_path = dir.path().join("audit.log");
         let mut audit = AuditLogger::new(audit_path.to_str().unwrap()).expect("audit");
         let memory = MemoryStore::new(dir.path());
@@ -332,9 +327,6 @@ mod tests {
         );
         let result = engine.run_once("write file").await;
         assert!(result.is_err());
-        {
-            let _guard = crate::test_support::env_test_lock();
-            std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
-        }
+        std::env::remove_var("OZR_SESSION_CHECKPOINT_PATH");
     }
 }
