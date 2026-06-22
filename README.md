@@ -1,5 +1,7 @@
 # ozr
 
+[![CI](https://github.com/kenjiroe/ozr/actions/workflows/ci.yml/badge.svg)](https://github.com/kenjiroe/ozr/actions/workflows/ci.yml)
+
 **Security-first, local-first async agent harness for the Model Context Protocol (MCP).**
 
 ozr orchestrates LLM planning, MCP tool execution, human approval, and audit logging in a pure async Rust runtime. Use it from the CLI, HTTP API, OpenAI-compatible clients, or the Tauri desktop GUI.

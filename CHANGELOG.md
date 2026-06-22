@@ -37,6 +37,6 @@ All notable changes to ozr are documented here. The format follows [Keep a Chang
 - SQLite memory layer with FTS5; optional Qdrant vector recall.
 - GitHub Actions CI: fmt, clippy, unit/smoke/MCP/API/sandboxd tests.
 
-[Unreleased]: compare/v0.1.0-alpha.1...HEAD
-[v0.1.0-alpha.1]: releases/tag/v0.1.0-alpha.1
-[v0.1.0-alpha]: releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha.1...HEAD
+[v0.1.0-alpha.1]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha...v0.1.0-alpha.1
+[v0.1.0-alpha]: https://github.com/kenjiroe/ozr/releases/tag/v0.1.0-alpha
