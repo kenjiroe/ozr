@@ -61,7 +61,13 @@ cargo build
 cd ui && npm install && npm run tauri dev
 ```
 
-The GUI spawns `ozr serve` on `http://127.0.0.1:18787` by default. See [ui/README.md](ui/README.md).
+**Default:** GUI spawns `ozr serve` on `http://127.0.0.1:18787`. See [ui/README.md](ui/README.md).
+
+**Docker stack:** start `./scripts/docker-up-stack.sh`, then point the GUI at the container API:
+
+```bash
+OZR_GUI_API_BASE=http://127.0.0.1:8080 npm run tauri dev
+```
 
 ### Docker
 

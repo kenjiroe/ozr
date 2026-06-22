@@ -1,12 +1,25 @@
 mod ozr_process;
 
-use ozr_process::OzrProcess;
+use ozr_process::{ConnectionMode, OzrProcess};
+use serde::Serialize;
 use tauri::{Manager, RunEvent, State};
 
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+struct ApiBootInfo {
+    base_url: String,
+    mode: &'static str,
+}
+
 #[tauri::command]
-fn prepare_api(state: State<'_, OzrProcess>) -> Result<String, String> {
+fn prepare_api(state: State<'_, OzrProcess>) -> Result<ApiBootInfo, String> {
     state.start()?;
-    state.wait_until_healthy(40, 200)
+    let base_url = state.wait_until_healthy(40, 200)?;
+    let mode = match state.connection_mode() {
+        ConnectionMode::Spawned => "spawned",
+        ConnectionMode::External => "external",
+    };
+    Ok(ApiBootInfo { base_url, mode })
 }
 
 #[tauri::command]

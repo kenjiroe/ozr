@@ -11,6 +11,11 @@ import { ChatEntry, ChatPanel } from "./ChatPanel";
 
 type RunPhase = "idle" | "running" | "awaiting_approval" | "approving";
 
+interface ApiBootInfo {
+  base_url: string;
+  mode: "spawned" | "external";
+}
+
 export function Workspace() {
   const [apiBase, setApiBase] = useState<string | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
@@ -19,7 +24,7 @@ export function Workspace() {
   const [phase, setPhase] = useState<RunPhase>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingApproval | null>(null);
-  const [statusLine, setStatusLine] = useState("Starting ozr API…");
+  const [statusLine, setStatusLine] = useState("Connecting to ozr API…");
 
   const client = useMemo(
     () => (apiBase ? new OzrApiClient(apiBase) : null),
@@ -38,17 +43,19 @@ export function Workspace() {
 
     async function boot() {
       try {
-        const base = await invoke<string>("prepare_api");
+        const bootInfo = await invoke<ApiBootInfo>("prepare_api");
         if (cancelled) {
           return;
         }
-        setApiBase(base);
-        setStatusLine(`Connected · ${base}`);
+        const label =
+          bootInfo.mode === "external" ? "external API" : "local spawn";
+        setApiBase(bootInfo.base_url);
+        setStatusLine(`Connected (${label}) · ${bootInfo.base_url}`);
         setBootError(null);
       } catch (error) {
         if (!cancelled) {
           setBootError(error instanceof Error ? error.message : String(error));
-          setStatusLine("Failed to start ozr API");
+          setStatusLine("Failed to connect to ozr API");
         }
       }
     }
