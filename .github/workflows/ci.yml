@@ -23,7 +23,7 @@ jobs:
       - name: cargo check
         run: cargo check
       - name: cargo test (unit)
-        run: cargo test --lib
+        run: cargo test --lib -- --test-threads=1
       - name: cargo test (smoke)
         run: cargo test --test smoke_scenarios
       - uses: actions/setup-node@v4
