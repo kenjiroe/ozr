@@ -42,8 +42,4 @@ jobs:
       - name: docker build ozr image
         run: docker build -t ozr:ci .
       - name: validate docker compose stack
-        run: |
-          git clone --depth 1 https://github.com/tastyeffectco/sandboxd.git vendor/sandboxd
-          export SANDBOXD_DATA_HOST_ABS="$PWD/.docker/sandboxd-data"
-          mkdir -p .docker/sandboxd-data/log
-          docker compose --env-file .env.stack.example -f docker-compose.stack.yml config
+        run: ./scripts/validate-stack-compose.sh
