@@ -152,7 +152,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [CHANGEL
 
 ## Status
 
-**v0.1.0-alpha.1** — async core, Axum API, OpenAI shim (JSON + SSE stream shim), approval gate, production policy pack, Docker stack, sandboxd executor, GUI alpha. True token streaming from LLM providers is not implemented yet.
+**v0.1.0-alpha.2** — public GitHub release; async core, Axum API, OpenAI shim (JSON + SSE stream shim), production policy pack, Docker stack, sandboxd executor, GUI alpha. SSE streaming is a shim (non-incremental); true provider token streaming is on the roadmap. See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

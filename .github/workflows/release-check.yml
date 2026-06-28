@@ -1,0 +1,19 @@
+name: Release check
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Validates the stack compose on tag push; publish the GitHub release via
+# ./scripts/create-github-release.sh (this workflow does not publish).
+jobs:
+  stack-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-compose-action@v1
+        with:
+          version: v2.29.7
+      - name: validate full docker stack compose
+        run: ./scripts/validate-stack-compose.sh

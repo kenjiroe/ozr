@@ -8,3 +8,6 @@ ui/src-tauri/target
 .ozr
 .env
 .env.local
+
+# Internal launch/promotion runbook — not public
+.github/LAUNCH.md

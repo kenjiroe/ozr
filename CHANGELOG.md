@@ -2,6 +2,19 @@
 
 All notable changes to ozr are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [v0.1.0-alpha.2] - 2026-06-22
+
+### Added
+
+- Open-source publication docs: `SECURITY.md`, `CODE_OF_CONDUCT.md`, `docs/architecture.md`, `scripts/audit-secrets.sh`, `scripts/validate-stack-compose.sh`.
+- CI secret audit step and GitHub README CI badge.
+- Launch materials in `.github/LAUNCH.md`.
+
+### Fixed
+
+- CI: portable secret audit (no `rg` dependency), rustfmt, flaky lib tests, core `docker-compose.yml` validation.
+- `main` branch synced with release-ready code on GitHub.
+
 ## [v0.1.0-alpha.1] - 2026-06-20
 
 ### Added
@@ -37,6 +50,7 @@ All notable changes to ozr are documented here. The format follows [Keep a Chang
 - SQLite memory layer with FTS5; optional Qdrant vector recall.
 - GitHub Actions CI: fmt, clippy, unit/smoke/MCP/API/sandboxd tests.
 
-[Unreleased]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha.1...HEAD
+[Unreleased]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha.2...HEAD
+[v0.1.0-alpha.2]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [v0.1.0-alpha.1]: https://github.com/kenjiroe/ozr/compare/v0.1.0-alpha...v0.1.0-alpha.1
 [v0.1.0-alpha]: https://github.com/kenjiroe/ozr/releases/tag/v0.1.0-alpha
